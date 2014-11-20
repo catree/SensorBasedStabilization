@@ -1,6 +1,6 @@
 #include"VideoStabilization.h"
 
-VideoStabilization::VideoStabilization(string videoName) {
+VideoStabilization::VideoStabilization(string videoName) : name(videoName) {
     double fuvX = fLength * captureWidth / (cellSize * maxWidth);
     double fuvY = fLength * captureHeight / (cellSize * maxHeight);
     double cx = captureWidth / 2, cy = captureHeight / 2;
@@ -35,15 +35,13 @@ VideoStabilization::VideoStabilization(string videoName) {
         angvY.push_back(avy);
         angvZ.push_back(avz);
     }
+    dataFile.close();
 }
 
 void VideoStabilization::show() {
     for (int i = 0; i < frames; ++i) {
         cout << i << " " << timestamps[i] << " " << angvX[i] / frameRate << " " << angvY[i] / frameRate << " "
-                << angvZ[i] / frameRate << '\n';
-    }
-    for (int i = 0; i < frames; ++i) {
-        cout << i << " " << rotAngles[i].pitch << " " <<
+                << angvZ[i] / frameRate << "|" << rotAngles[i].pitch << " " <<
                 rotAngles[i].heading << " " << rotAngles[i].bank << endl;
     }
 }
@@ -108,7 +106,7 @@ double VideoStabilization::computeAlpha(const EulerAngles &rotAngle) {
 
 EulerAngles VideoStabilization::computeRotation(const Quaternion &v, const Quaternion &p) {
     EulerAngles rotAngle;
-    rotAngle.fromInertialToObjectQuaternion(conjugate(v) * p);
+    rotAngle.fromInertialToObjectQuaternion(conjugate(p) * v);
     return rotAngle;
 }
 
@@ -123,4 +121,24 @@ Mat VideoStabilization::rotationMat(EulerAngles rotAngle) {
     Mat Rx(3, 3, CV_64F, x);
     Mat Rz(3, 3, CV_64F, z);
     return Rz * Rx * Ry;
+}
+
+bool VideoStabilization::output() {
+    if (rotAngles.size() != frames)
+        return false;
+    VideoWriter videoWriter(name + "/VID_" + name + ".avi", CV_FOURCC('M', 'J', 'P', 'G'),
+            30, Size(captureWidth, captureHeight));
+    VideoWriter videoWriter1(name + "/VID_" + name + "_new.avi", CV_FOURCC('M', 'J', 'P', 'G'),
+            30, Size(captureWidth, captureHeight));
+    for (int i = 0; i < frames; ++i) {
+        stringstream ss;
+        ss << name << "/IMG_" << name << "_" << i << ".jpg";
+        string imagePath;
+        ss >> imagePath;
+        //cout << imagePath;
+        Mat frame = imread(imagePath);
+        videoWriter << frame;
+    }
+    cout << "Output complete!";
+    return true;
 }
