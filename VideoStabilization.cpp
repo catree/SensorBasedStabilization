@@ -1,11 +1,17 @@
 #include"VideoStabilization.h"
 
 VideoStabilization::VideoStabilization(string videoName) : name(videoName) {
-    double fuvX = fLength * captureWidth / (cellSize * maxWidth);
-    double fuvY = fLength * captureHeight / (cellSize * maxHeight);
+    double fuvX = fLength * captureWidth * 1000 / (cellSize * maxWidth);
+    double fuvY = fLength * captureHeight * 1000 / (cellSize * maxHeight);
     double cx = captureWidth / 2, cy = captureHeight / 2;
-    double k[3][3] = {{fuvX, 0, cx}, {0, fuvY, cy}, {0, 0, 1}};
-    K = Mat(3, 3, CV_64F, k);
+    //double k[3][3] = {{fuvX, 0, cx}, {0, fuvY, cy}, {0, 0, 1}};
+    //K = Mat(3, 3, CV_64F, k);
+    K = Mat::zeros(3, 3, CV_64F);
+    K.at<double>(0, 0) = fuvX;
+    K.at<double>(1, 1) = fuvY;
+    K.at<double>(0, 2) = cx;
+    K.at<double>(1, 2) = cy;
+    K.at<double>(2, 2) = 1;
 
     ifstream dataFile((videoName + "/TXT_" + videoName + ".txt").c_str());
     double tmp;
@@ -62,7 +68,7 @@ void VideoStabilization::smooth() {
         rotAngles[i] = computeRotation(v[i], p[i]);
         int alpha = computeAlpha(rotAngles[i]);
         if (alpha == 1) {
-            vDelta[i] = slerp(qi, vDelta[i - 1], d);
+            vDelta[i] = slerp(qi, v[i - 1], d);
         }
         else {
             vDelta[i] = slerp(p[i] * conjugate(p[i - 1]) * vDelta[i - 1], vDelta[i - 1], alpha);
@@ -106,13 +112,15 @@ double VideoStabilization::computeAlpha(const EulerAngles &rotAngle) {
 
 EulerAngles VideoStabilization::computeRotation(const Quaternion &v, const Quaternion &p) {
     EulerAngles rotAngle;
-    rotAngle.fromInertialToObjectQuaternion(conjugate(p) * v);
+    rotAngle.fromInertialToObjectQuaternion(conjugate(v) * p);
     return rotAngle;
 }
 
 Mat VideoStabilization::rotationMat(EulerAngles rotAngle) {
-    double ry = rotAngle.heading;
-    double rx = rotAngle.pitch;
+    //double ry = rotAngle.heading;
+    double rx = -rotAngle.heading;
+    //double rx = rotAngle.pitch;
+    double ry = -rotAngle.pitch;
     double rz = rotAngle.bank;
     double z[3][3] = {{cos(rz), sin(rz), 0}, {-sin(rz), cos(rz), 0}, {0, 0, 1}};
     double x[3][3] = {{1, 0, 0}, {0, cos(rx), sin(rx)}, {0, -sin(rx), cos(rx)}};
@@ -135,10 +143,45 @@ bool VideoStabilization::output() {
         ss << name << "/IMG_" << name << "_" << i << ".jpg";
         string imagePath;
         ss >> imagePath;
-        //cout << imagePath;
         Mat frame = imread(imagePath);
+
         videoWriter << frame;
+        rotate(outputFrame, frame, rotationMat(rotAngles[i]));
+        rectangle(outputFrame, Rect(innerPercent * captureWidth, innerPercent * captureHeight,
+                        (1 - 2 * innerPercent) * captureWidth, (1 - 2 * innerPercent) * captureHeight),
+                Scalar(255, 0, 0));
+        videoWriter1 << outputFrame;
+        cout << i << endl;
+        imshow("ha", outputFrame);
+        waitKey(1);
     }
     cout << "Output complete!";
     return true;
 }
+
+void VideoStabilization::rotate(Mat &omat, const Mat &imat, const Mat &R, int scalefactor, bool interp) {
+    omat = Mat::zeros(imat.rows / scalefactor, imat.cols / scalefactor, imat.type());
+    Mat H = K * R.inv() * K.inv();
+    double UX[3][1] = {{1.0 * scalefactor}, {0}, {0}};
+    Mat xUnit = H * Mat(3, 1, CV_64F, UX);
+    double ux = xUnit.at<double>(0, 0), uy = xUnit.at<double>(1, 0), uz = xUnit.at<double>(2, 0);
+    for (int i = 0; i < imat.rows / scalefactor; ++i) {
+        double X[3][1] = {{0}, {(double) i * scalefactor}, {1}};
+        Mat x(3, 1, CV_64F, X);
+        Mat x0 = H * x;
+        for (int j = 0; j < imat.cols / scalefactor; ++j) {
+            double cx = x0.at<double>(0, 0) / x0.at<double>(2, 0);
+            double cy = x0.at<double>(1, 0) / x0.at<double>(2, 0);
+            if ((cy >= 0 && cy <= imat.rows - 1) && (cx >= 0 && cx <= imat.cols - 1))
+                omat.at<Vec3b>(i, j) = imat.at<Vec3b>(floor(cy + 0.5), floor(cx + 0.5));
+            else
+                omat.at<Vec3b>(i, j) = Vec3b(0, 0, 0);
+            //x0=x0+xUnit;
+            x0.at<double>(0, 0) += ux;
+            x0.at<double>(1, 0) += uy;
+            x0.at<double>(2, 0) += uz;
+        }
+
+    }
+}
+
