@@ -45,9 +45,13 @@ VideoStabilization::VideoStabilization(string videoName) : name(videoName) {
 }
 
 void VideoStabilization::show() {
+    EulerAngles e;
     for (int i = 0; i < frames; ++i) {
-        cout << i << " " << timestamps[i] << " " << angvX[i] / frameRate << " " << angvY[i] / frameRate << " "
-                << angvZ[i] / frameRate << "|" << rotAngles[i].pitch << " " <<
+        e.fromInertialToObjectQuaternion(p[i]);
+        cout << i << " " << timestamps[i] << " "
+                //<< angvX[i] / frameRate << " " << angvY[i] / frameRate << " " << angvZ[i] / frameRate
+                << e.pitch << " " << e.heading << " " << e.bank
+                << "|" << rotAngles[i].pitch << " " <<
                 rotAngles[i].heading << " " << rotAngles[i].bank << endl;
     }
 }
@@ -103,7 +107,7 @@ double VideoStabilization::computeAlpha(const EulerAngles &rotAngle) {
         omega = max(omega, (innerWidth - cx) / innerWidth);
         omega = max(omega, (cx - (captureWidth - innerWidth)) / innerWidth);
         omega = max(omega, (innerHeight - cy) / innerHeight);
-        omega = max(omega, (cx - (captureHeight - innerHeight)) / innerHeight);
+        omega = max(omega, (cy - (captureHeight - innerHeight)) / innerHeight);
     }
     if (omega > 1)
         omega = 1;

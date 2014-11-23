@@ -15,11 +15,11 @@ using namespace std;
 
 int main() {
     namedWindow("ha");
-    VideoStabilization a("20141115_225315");
+    VideoStabilization a("20141123_164728");
     a.smooth();
     a.show();
-    a.output();
-    waitKey(0);
+    //a.output();
+    //waitKey(0);
     return 0;
 }
 
