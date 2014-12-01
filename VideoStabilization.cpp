@@ -175,13 +175,6 @@ bool VideoStabilization::output() {
     return true;
 }
 
-Vec3b VideoStabilization::biInterp(double x, double y, const Mat &source) {
-    int sx = floor(x), sy = floor(y);
-    Vec3b r1 = (sx + 1 - x) * source.at<Vec3b>(sy, sx) + (x - sx) * source.at<Vec3b>(sy, sx + 1);
-    Vec3b r2 = (sx + 1 - x) * source.at<Vec3b>(sy + 1, sx) + (x - sx) * source.at<Vec3b>(sy + 1, sx + 1);
-    return (sy + 1 - y) * r1 + (y - sy) * r2;
-}
-
 void VideoStabilization::rotate(const Mat &src, Mat &dst, const Mat &R) {
     Mat H = K * R.inv() * K.inv();
     warpPerspective(src, dst, H, Size(src.cols, src.rows), INTER_LINEAR + WARP_INVERSE_MAP);

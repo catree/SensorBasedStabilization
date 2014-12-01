@@ -41,8 +41,7 @@ private:
 
     EulerAngles computeRotation(const Quaternion &v, const Quaternion &p);
 
-    static Vec3b biInterp(double x, double y, const Mat &source);
-
+    void rotate(const Mat &src, Mat &dst, const Mat &R);
 public:
     Mat rotationMat(EulerAngles rotAngle);
 
@@ -53,8 +52,6 @@ public:
     void show();
 
     bool output();
-
-    void rotate(const Mat &src, Mat &dst, const Mat &R);
 };
 
 
