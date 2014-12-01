@@ -17,8 +17,8 @@ using namespace std;
 class VideoStabilization {
 private:
     const double d = 0.95;
-    const double cropPercent = 0.1, innerPercent = 0.05;
-    const int beta = 2;
+    const double cropPercent = 0.1, innerPercent = 0.025;
+    const int beta = 3;
 
     const double cellSize = 1.12;
     const double fLength = 4; //um
@@ -33,13 +33,16 @@ private:
     vector<int> timestamps;
     vector<double> angvX, angvY, angvZ;
     vector<EulerAngles> rotAngles;
-    vector<Quaternion> p;
+    vector<Quaternion> p, v;
 
     Quaternion angleToQuaternion(double angX, double angY, double angZ);
 
     double computeAlpha(const EulerAngles &rotAngle);
 
     EulerAngles computeRotation(const Quaternion &v, const Quaternion &p);
+
+    static Vec3b biInterp(double x, double y, const Mat &source);
+
 public:
     Mat rotationMat(EulerAngles rotAngle);
 
@@ -51,8 +54,7 @@ public:
 
     bool output();
 
-    void rotate(Mat &omat, const Mat &imat, const Mat &R, int scalefactor = 1, bool interp = false);
-
+    void rotate(const Mat &src, Mat &dst, const Mat &R);
 };
 
 

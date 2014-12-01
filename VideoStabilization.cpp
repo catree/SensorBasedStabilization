@@ -1,11 +1,11 @@
 #include"VideoStabilization.h"
 
 VideoStabilization::VideoStabilization(string videoName) : name(videoName) {
-    double fuvX = fLength * captureWidth * 1000 / (cellSize * maxWidth);
-    double fuvY = fLength * captureHeight * 1000 / (cellSize * maxHeight);
+    //double fuvX = fLength * captureWidth * 1000 / (cellSize * maxWidth);
+    double fuvX = 766;
+    double fuvY = 766;
+    //double fuvY = fLength * captureHeight * 1000 / (cellSize * maxHeight);
     double cx = captureWidth / 2, cy = captureHeight / 2;
-    //double k[3][3] = {{fuvX, 0, cx}, {0, fuvY, cy}, {0, 0, 1}};
-    //K = Mat(3, 3, CV_64F, k);
     K = Mat::zeros(3, 3, CV_64F);
     K.at<double>(0, 0) = fuvX;
     K.at<double>(1, 1) = fuvY;
@@ -45,21 +45,24 @@ VideoStabilization::VideoStabilization(string videoName) : name(videoName) {
 }
 
 void VideoStabilization::show() {
-    EulerAngles e;
+    EulerAngles e, ev;
     for (int i = 0; i < frames; ++i) {
         e.fromInertialToObjectQuaternion(p[i]);
+        ev.fromInertialToObjectQuaternion(v[i]);
         cout << i << " " << timestamps[i] << " "
-                //<< angvX[i] / frameRate << " " << angvY[i] / frameRate << " " << angvZ[i] / frameRate
                 << e.pitch << " " << e.heading << " " << e.bank
-                << "|" << rotAngles[i].pitch << " " <<
-                rotAngles[i].heading << " " << rotAngles[i].bank << endl;
+                << "|" << ev.pitch << " " << ev.heading << " " << ev.bank
+                << "|" << angvX[i] / frameRate << " " << angvY[i] / frameRate << " " << angvZ[i] / frameRate
+                << "|" << rotAngles[i].pitch << " " << rotAngles[i].heading << " " << rotAngles[i].bank
+                << endl;
     }
 }
 
 void VideoStabilization::smooth() {
-    vector<Quaternion> v(frames), vDelta(frames);
+    vector<Quaternion> vDelta(frames), pDelta(frames);
     rotAngles = vector<EulerAngles>(frames);
     p = vector<Quaternion>(frames);
+    v = vector<Quaternion>(frames);
     Quaternion qi;
     qi.identity();
 
@@ -67,15 +70,20 @@ void VideoStabilization::smooth() {
     v[0] = p[0];
     vDelta[0] = qi;
     for (int i = 1; i < frames; ++i) {
-        p[i] = p[i - 1] * angleToQuaternion(angvX[i - 1], angvY[i - 1], angvZ[i - 1]);
+        //if(i==10)
+        //  cout << 1;
+        pDelta[i - 1] = angleToQuaternion(angvX[i - 1], angvY[i - 1], angvZ[i - 1]);
+        p[i] = p[i - 1] * pDelta[i - 1];
         v[i] = v[i - 1] * vDelta[i - 1];
         rotAngles[i] = computeRotation(v[i], p[i]);
-        int alpha = computeAlpha(rotAngles[i]);
+        double alpha = computeAlpha(rotAngles[i]);
         if (alpha == 1) {
             vDelta[i] = slerp(qi, v[i - 1], d);
         }
         else {
-            vDelta[i] = slerp(p[i] * conjugate(p[i - 1]) * vDelta[i - 1], vDelta[i - 1], alpha);
+            EulerAngles e;
+            e.fromInertialToObjectQuaternion(p[i] * conjugate(p[i - 1]) * vDelta[i - 1]);
+            vDelta[i] = slerp(p[i] * conjugate(p[i - 1]), vDelta[i - 1], alpha);
         }
     }
 }
@@ -88,10 +96,10 @@ Quaternion VideoStabilization::angleToQuaternion(double angX, double angY, doubl
 }
 
 double VideoStabilization::computeAlpha(const EulerAngles &rotAngle) {
-    double p1[3][1] = {{captureWidth * cropPercent}, {captureWidth * cropPercent}, {1}};
-    double p2[3][1] = {{captureWidth * cropPercent}, {captureWidth * (1 - cropPercent)}, {1}};
-    double p3[3][1] = {{captureWidth * (1 - cropPercent)}, {captureWidth * cropPercent}, {1}};
-    double p4[3][1] = {{captureWidth * (1 - cropPercent)}, {captureWidth * (1 - cropPercent)}, {1}};
+    double p1[3][1] = {{captureWidth * cropPercent}, {captureHeight * cropPercent}, {1}};
+    double p2[3][1] = {{captureWidth * cropPercent}, {captureHeight * (1 - cropPercent)}, {1}};
+    double p3[3][1] = {{captureWidth * (1 - cropPercent)}, {captureHeight * cropPercent}, {1}};
+    double p4[3][1] = {{captureWidth * (1 - cropPercent)}, {captureHeight * (1 - cropPercent)}, {1}};
     vector<Mat> points(4);
     points[0] = Mat(3, 1, CV_64F, p1);
     points[1] = Mat(3, 1, CV_64F, p2);
@@ -150,11 +158,15 @@ bool VideoStabilization::output() {
         Mat frame = imread(imagePath);
 
         videoWriter << frame;
-        rotate(outputFrame, frame, rotationMat(rotAngles[i]));
+        rotate(frame, outputFrame, rotationMat(rotAngles[i]));
+        videoWriter1 << outputFrame;
         rectangle(outputFrame, Rect(innerPercent * captureWidth, innerPercent * captureHeight,
                         (1 - 2 * innerPercent) * captureWidth, (1 - 2 * innerPercent) * captureHeight),
                 Scalar(255, 0, 0));
-        videoWriter1 << outputFrame;
+        rectangle(outputFrame, Rect(cropPercent * captureWidth, cropPercent * captureHeight,
+                        (1 - 2 * cropPercent) * captureWidth, (1 - 2 * cropPercent) * captureHeight),
+                Scalar(0, 0, 255));
+
         cout << i << endl;
         imshow("ha", outputFrame);
         waitKey(1);
@@ -163,29 +175,14 @@ bool VideoStabilization::output() {
     return true;
 }
 
-void VideoStabilization::rotate(Mat &omat, const Mat &imat, const Mat &R, int scalefactor, bool interp) {
-    omat = Mat::zeros(imat.rows / scalefactor, imat.cols / scalefactor, imat.type());
-    Mat H = K * R.inv() * K.inv();
-    double UX[3][1] = {{1.0 * scalefactor}, {0}, {0}};
-    Mat xUnit = H * Mat(3, 1, CV_64F, UX);
-    double ux = xUnit.at<double>(0, 0), uy = xUnit.at<double>(1, 0), uz = xUnit.at<double>(2, 0);
-    for (int i = 0; i < imat.rows / scalefactor; ++i) {
-        double X[3][1] = {{0}, {(double) i * scalefactor}, {1}};
-        Mat x(3, 1, CV_64F, X);
-        Mat x0 = H * x;
-        for (int j = 0; j < imat.cols / scalefactor; ++j) {
-            double cx = x0.at<double>(0, 0) / x0.at<double>(2, 0);
-            double cy = x0.at<double>(1, 0) / x0.at<double>(2, 0);
-            if ((cy >= 0 && cy <= imat.rows - 1) && (cx >= 0 && cx <= imat.cols - 1))
-                omat.at<Vec3b>(i, j) = imat.at<Vec3b>(floor(cy + 0.5), floor(cx + 0.5));
-            else
-                omat.at<Vec3b>(i, j) = Vec3b(0, 0, 0);
-            //x0=x0+xUnit;
-            x0.at<double>(0, 0) += ux;
-            x0.at<double>(1, 0) += uy;
-            x0.at<double>(2, 0) += uz;
-        }
-
-    }
+Vec3b VideoStabilization::biInterp(double x, double y, const Mat &source) {
+    int sx = floor(x), sy = floor(y);
+    Vec3b r1 = (sx + 1 - x) * source.at<Vec3b>(sy, sx) + (x - sx) * source.at<Vec3b>(sy, sx + 1);
+    Vec3b r2 = (sx + 1 - x) * source.at<Vec3b>(sy + 1, sx) + (x - sx) * source.at<Vec3b>(sy + 1, sx + 1);
+    return (sy + 1 - y) * r1 + (y - sy) * r2;
 }
 
+void VideoStabilization::rotate(const Mat &src, Mat &dst, const Mat &R) {
+    Mat H = K * R.inv() * K.inv();
+    warpPerspective(src, dst, H, Size(src.cols, src.rows), INTER_LINEAR + WARP_INVERSE_MAP);
+}
