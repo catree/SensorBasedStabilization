@@ -40,9 +40,9 @@ private:
     double computeAlpha(const EulerAngles &rotAngle);
 
     EulerAngles computeRotation(const Quaternion &v, const Quaternion &p);
-
-    void rotate(const Mat &src, Mat &dst, const Mat &R);
 public:
+    void rotate(const Mat &src, Mat &dst, const Mat &R);
+
     Mat rotationMat(EulerAngles rotAngle);
 
     VideoStabilization(string videoName);

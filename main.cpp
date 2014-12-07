@@ -15,16 +15,16 @@ using namespace std;
 
 int main() {
     namedWindow("ha");
-    VideoStabilization a("20141123_214501");
+    VideoStabilization a("20141207_151016");
     a.smooth();
     a.show();
-    //Quaternion q;
-    //q.setToRotateInertialToObject(EulerAngles(0.1, 0.2, 0.2));
-    //cout << q.w << q.x << q.y << q.z;
 
     a.output();
     //waitKey(0);
-    //Mat b = imread("1.jpg");
+//    Mat b = imread("1.jpg"), b1;
+//    a.rotate(b, b1, a.rotationMat(EulerAngles(0, 0.1, 0)));
+//    imshow("ha", b1);
+//    waitKey(0);
     return 0;
 }
 

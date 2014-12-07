@@ -28,12 +28,11 @@ VideoStabilization::VideoStabilization(string videoName) : name(videoName) {
         timestamps[i] = time - startTime;
         dataFile >> tmp;
     }
-
     for (int i = 0; i < frames; ++i) {
         long sensorTime = 0;
         double avx, avy, avz;
         dataFile >> sensorTime;
-        while (sensorTime < timestamps[i] + startTime) {
+        while (sensorTime < timestamps[i] + startTime && !dataFile.eof()) {
             dataFile >> avx >> avy >> avz;
             dataFile >> sensorTime;
         }
@@ -124,7 +123,7 @@ double VideoStabilization::computeAlpha(const EulerAngles &rotAngle) {
 
 EulerAngles VideoStabilization::computeRotation(const Quaternion &v, const Quaternion &p) {
     EulerAngles rotAngle;
-    rotAngle.fromInertialToObjectQuaternion(conjugate(v) * p);
+    rotAngle.fromInertialToObjectQuaternion(conjugate(p) * v);
     return rotAngle;
 }
 
