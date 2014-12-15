@@ -190,6 +190,9 @@ Quaternion &Quaternion::operator *=(const Quaternion &a) {
 
 	*this = *this * a;
 
+	//Normalize(Edited by Tong)
+	this->normalize();
+
 	// Return reference to l-value
 
 	return *this;

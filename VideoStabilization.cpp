@@ -67,23 +67,35 @@ void VideoStabilization::smooth() {
 
     p[0] = qi;
     v[0] = p[0];
+    pDelta[0] = angleToQuaternion(angvX[0], angvY[0], angvZ[0]);
     vDelta[0] = qi;
     for (int i = 1; i < frames; ++i) {
-        //if(i==10)
-        //  cout << 1;
-        pDelta[i - 1] = angleToQuaternion(angvX[i - 1], angvY[i - 1], angvZ[i - 1]);
-        p[i] = p[i - 1] * pDelta[i - 1];
+        /*p[i] = p[i - 1] * pDelta[i - 1];
+        p[i].normalize();
         v[i] = v[i - 1] * vDelta[i - 1];
+        v[i].normalize();*/
+        p[i] = p[i - 1];
+        p[i] *= pDelta[i - 1];
+        v[i] = v[i - 1];
+        v[i] *= vDelta[i - 1];
+        //p[i] *= pDelta[i - 1];
+        //v[i] *= vDelta[i - 1];
         rotAngles[i] = computeRotation(v[i], p[i]);
+
+        //if (i == 110)
+        //  cout << endl;
+        pDelta[i] = angleToQuaternion(angvX[i], angvY[i], angvZ[i]);
         double alpha = computeAlpha(rotAngles[i]);
         if (alpha == 1) {
             vDelta[i] = slerp(qi, v[i - 1], d);
         }
         else {
-            EulerAngles e;
-            e.fromInertialToObjectQuaternion(p[i] * conjugate(p[i - 1]) * vDelta[i - 1]);
-            vDelta[i] = slerp(p[i] * conjugate(p[i - 1]), vDelta[i - 1], alpha);
+            Quaternion pDelta2 = pDelta[i];
+            //pDelta2 *= conjugate(p[i - 1]) * v[i - 1];
+            vDelta[i] = slerp(pDelta2, vDelta[i - 1], alpha);
+            //vDelta[i] = slerp(pDelta[i] * conjugate(p[i - 1]) * v[i - 1], vDelta[i - 1], alpha);
         }
+
     }
 }
 
@@ -108,7 +120,7 @@ double VideoStabilization::computeAlpha(const EulerAngles &rotAngle) {
     double innerWidth = captureWidth * innerPercent, innerHeight = captureHeight * innerPercent;
     Mat R = rotationMat(rotAngle);
     for (int i = 0; i < 4; ++i) {
-        Mat newPoint = K * R * K.inv() * points[i];
+        Mat newPoint = K * R.inv() * K.inv() * points[i];
         double cx = newPoint.at<double>(0, 0) / newPoint.at<double>(2, 0);
         double cy = newPoint.at<double>(1, 0) / newPoint.at<double>(2, 0);
         omega = max(omega, (innerWidth - cx) / innerWidth);
@@ -139,7 +151,7 @@ Mat VideoStabilization::rotationMat(EulerAngles rotAngle) {
     Mat Ry(3, 3, CV_64F, y);
     Mat Rx(3, 3, CV_64F, x);
     Mat Rz(3, 3, CV_64F, z);
-    return Rz * Rx * Ry;
+    return Rz * Ry * Rx;
 }
 
 bool VideoStabilization::output() {
@@ -158,16 +170,18 @@ bool VideoStabilization::output() {
 
         videoWriter << frame;
         rotate(frame, outputFrame, rotationMat(rotAngles[i]));
+        cropframe = outputFrame(Range(cropPercent * captureHeight, (1 - cropPercent) * captureHeight),
+                Range(cropPercent * captureWidth, (1 - cropPercent) * captureWidth));
         videoWriter1 << outputFrame;
-        rectangle(outputFrame, Rect(innerPercent * captureWidth, innerPercent * captureHeight,
+        /*rectangle(outputFrame, Rect(innerPercent * captureWidth, innerPercent * captureHeight,
                         (1 - 2 * innerPercent) * captureWidth, (1 - 2 * innerPercent) * captureHeight),
                 Scalar(255, 0, 0));
         rectangle(outputFrame, Rect(cropPercent * captureWidth, cropPercent * captureHeight,
                         (1 - 2 * cropPercent) * captureWidth, (1 - 2 * cropPercent) * captureHeight),
-                Scalar(0, 0, 255));
+                Scalar(0, 0, 255));*/
 
         cout << i << endl;
-        imshow("ha", outputFrame);
+        imshow("ha", cropframe);
         waitKey(1);
     }
     cout << "Output complete!";

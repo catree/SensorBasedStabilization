@@ -70,6 +70,7 @@ public:
 
 	float	getRotationAngle() const;
 	Vector3	getRotationAxis() const;
+
 };
 
 // A global "identity" quaternion constant

@@ -26,7 +26,7 @@ private:
     const int captureWidth = 960, captureHeight = 544;
     const double frameRate = 30;
     Mat K;
-    Mat outputFrame;
+    Mat outputFrame, cropframe;
 
     int frames;
     string name;

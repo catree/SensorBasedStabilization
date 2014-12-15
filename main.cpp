@@ -15,7 +15,7 @@ using namespace std;
 
 int main() {
     namedWindow("ha");
-    VideoStabilization a("20141207_151016");
+    VideoStabilization a("20141207_172205");
     a.smooth();
     a.show();
 
