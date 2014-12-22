@@ -16,9 +16,10 @@ using namespace std;
 
 class VideoStabilization {
 private:
-    const double d = 0.95;
-    const double cropPercent = 0.1, innerPercent = 0.025;
-    const int beta = 3;
+    const double d = 0.6;
+    const double alphaMin = 0.6;
+    const double cropPercent = 0.15, innerPercent = 0.025;
+    const int beta = 1.2;
 
     const double cellSize = 1.12;
     const double fLength = 4; //um
@@ -34,12 +35,14 @@ private:
     vector<double> angvX, angvY, angvZ;
     vector<EulerAngles> rotAngles;
     vector<Quaternion> p, v;
+    vector<double> alpha;
 
     Quaternion angleToQuaternion(double angX, double angY, double angZ);
 
     double computeAlpha(const EulerAngles &rotAngle);
 
     EulerAngles computeRotation(const Quaternion &v, const Quaternion &p);
+
 public:
     void rotate(const Mat &src, Mat &dst, const Mat &R);
 

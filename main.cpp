@@ -14,8 +14,9 @@ using namespace cv;
 using namespace std;
 
 int main() {
-    namedWindow("ha");
-    VideoStabilization a("20141207_172205");
+    //namedWindow("ha");
+    //VideoStabilization a("20141222_095731");
+    VideoStabilization a("20141221_115039");
     a.smooth();
     a.show();
 
