@@ -9,18 +9,23 @@
 #include<opencv2/highgui/highgui.hpp>
 #include"VideoStabilization.h"
 #include "Quaternion.h"
+#include "test.h"
 
 using namespace cv;
 using namespace std;
 
 int main() {
-    //namedWindow("ha");
-    //VideoStabilization a("20141222_095731");
-    VideoStabilization a("20141221_115039");
+    //string videoName = "20141222_170219";
+    string videoName = "20141222_095731";
+    VideoStabilization a(videoName);
     a.smooth();
     a.show();
 
     a.output();
+
+    //test(videoName);
+    //test("20141222_095731");
+
     //waitKey(0);
 //    Mat b = imread("1.jpg"), b1;
 //    a.rotate(b, b1, a.rotationMat(EulerAngles(0, 0.1, 0)));
