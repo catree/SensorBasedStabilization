@@ -21,13 +21,11 @@ private:
     const double cropPercent = 0.15, innerPercent = 0.025;
     const int beta = 1.2;
 
-    const double cellSize = 1.12;
-    const double fLength = 4; //um
-    const int maxWidth = 4160, maxHeight = 2336;
     const int captureWidth = 960, captureHeight = 544;
-    const double frameRate = 30;
+    const double frameRate = 30, sensorRate = 100;
+    const double fuvX = 793, fuvY = 793;
     Mat K;
-    Mat outputFrame, cropframe;
+    Mat outputFrame, cropFrame;
 
     int frames;
     string name;

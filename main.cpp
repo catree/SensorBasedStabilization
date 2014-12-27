@@ -16,15 +16,13 @@ using namespace std;
 
 int main() {
     //string videoName = "20141222_170219";
-    string videoName = "20141222_095731";
+    string videoName = "20141222_185445";
     VideoStabilization a(videoName);
     a.smooth();
     a.show();
-
     a.output();
 
-    //test(videoName);
-    //test("20141222_095731");
+//    test(videoName);
 
     //waitKey(0);
 //    Mat b = imread("1.jpg"), b1;
