@@ -16,7 +16,7 @@ using namespace std;
 
 int main() {
     //string videoName = "20141222_170219";
-    string videoName = "20141222_185445";
+    const string videoName = "20141222_095731";
     VideoStabilization a(videoName);
     a.smooth();
     a.show();

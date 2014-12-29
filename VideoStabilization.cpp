@@ -50,7 +50,7 @@ void VideoStabilization::show() {
                 << e.pitch << " " << e.heading << " " << e.bank
                 << "|" << ev.pitch << " " << ev.heading << " " << ev.bank
                 << "|" << alpha[i]
-                //<< "|" << rotAngles[i].pitch << " " << rotAngles[i].heading << " " << rotAngles[i].bank
+                << "|" << rotAngles[i].pitch << " " << rotAngles[i].heading << " " << rotAngles[i].bank
                 << endl;
     }
 }
@@ -83,8 +83,8 @@ void VideoStabilization::smooth() {
             Quaternion vDelta2 = slerp(qi, vDelta[i - 1], d);
             //vDelta[i] = slerp(pDelta2, vDelta[i - 1], alpha[i]);
             //vDelta[i] = slerp(pDelta2, vDelta[i - 1], 0.995);
-            vDelta[i] = qi;
-            //vDelta[i] = slerp(pDelta2, vDelta2, alpha[i]);
+            //vDelta[i] = qi;
+            vDelta[i] = slerp(pDelta2, vDelta2, alpha[i]);
             //vDelta[i] = slerp(pDelta[i] * conjugate(p[i - 1]) * v[i - 1], vDelta[i - 1], alpha);
         }
 
@@ -136,7 +136,7 @@ Mat VideoStabilization::rotationMat(EulerAngles rotAngle) {
     double rx = -rotAngle.heading;
     //double rx = rotAngle.pitch;
     double ry = -rotAngle.pitch;
-    double rz = rotAngle.bank;
+    double rz = -rotAngle.bank;
     double z[3][3] = {{cos(rz), sin(rz), 0}, {-sin(rz), cos(rz), 0}, {0, 0, 1}};
     double x[3][3] = {{1, 0, 0}, {0, cos(rx), sin(rx)}, {0, -sin(rx), cos(rx)}};
     double y[3][3] = {{cos(ry), 0, -sin(ry)}, {0, 1, 0}, {sin(ry), 0, cos(ry)}};
@@ -159,6 +159,8 @@ bool VideoStabilization::output() {
         string imagePath;
         ss >> imagePath;
         Mat frame = imread(imagePath);
+        /*transpose(frame, frame);
+        flip(frame, frame, 1);*/
         videoWriter << frame;
         rotate(frame, outputFrame, rotationMat(rotAngles[i]));
         cropFrame = outputFrame(Range(cropPercent * captureHeight, (1 - cropPercent) * captureHeight),
