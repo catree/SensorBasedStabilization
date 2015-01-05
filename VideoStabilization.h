@@ -21,7 +21,7 @@ private:
     const double cropPercent = 0.15, innerPercent = 0.025;
     const int beta = 1.2;
 
-    const int captureWidth = 960, captureHeight = 544;
+    const int captureWidth = 544, captureHeight = 960;
     const double frameRate = 30, sensorRate = 100;
     const double fuvX = 793, fuvY = 793;
     Mat K;

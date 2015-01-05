@@ -1,4 +1,5 @@
 #include"VideoStabilization.h"
+#include "Matrix4x3.h"
 
 VideoStabilization::VideoStabilization(string videoName) : name(videoName) {
     double cx = captureWidth / 2, cy = captureHeight / 2;
@@ -83,8 +84,8 @@ void VideoStabilization::smooth() {
             Quaternion vDelta2 = slerp(qi, vDelta[i - 1], d);
             //vDelta[i] = slerp(pDelta2, vDelta[i - 1], alpha[i]);
             //vDelta[i] = slerp(pDelta2, vDelta[i - 1], 0.995);
-            //vDelta[i] = qi;
-            vDelta[i] = slerp(pDelta2, vDelta2, alpha[i]);
+            vDelta[i] = qi;
+            //vDelta[i] = slerp(pDelta2, vDelta2, alpha[i]);
             //vDelta[i] = slerp(pDelta[i] * conjugate(p[i - 1]) * v[i - 1], vDelta[i - 1], alpha);
         }
 
@@ -132,18 +133,23 @@ EulerAngles VideoStabilization::computeRotation(const Quaternion &v, const Quate
 }
 
 Mat VideoStabilization::rotationMat(EulerAngles rotAngle) {
-    //double ry = rotAngle.heading;
-    double rx = -rotAngle.heading;
-    //double rx = rotAngle.pitch;
-    double ry = -rotAngle.pitch;
-    double rz = -rotAngle.bank;
-    double z[3][3] = {{cos(rz), sin(rz), 0}, {-sin(rz), cos(rz), 0}, {0, 0, 1}};
-    double x[3][3] = {{1, 0, 0}, {0, cos(rx), sin(rx)}, {0, -sin(rx), cos(rx)}};
-    double y[3][3] = {{cos(ry), 0, -sin(ry)}, {0, 1, 0}, {sin(ry), 0, cos(ry)}};
-    Mat Ry(3, 3, CV_64F, y);
-    Mat Rx(3, 3, CV_64F, x);
-    Mat Rz(3, 3, CV_64F, z);
-    return Rz * Ry * Rx;
+    Matrix4x3 matrix4x3;
+    Quaternion quaternion;
+    rotAngle.heading = -rotAngle.heading;
+    rotAngle.bank = -rotAngle.bank;
+    quaternion.setToRotateInertialToObject(rotAngle);
+    matrix4x3.fromQuaternion(quaternion);
+    Mat mat = Mat::zeros(3, 3, CV_64F);
+    mat.at<double>(0, 0) = matrix4x3.m11;
+    mat.at<double>(0, 1) = matrix4x3.m21;
+    mat.at<double>(0, 2) = matrix4x3.m31;
+    mat.at<double>(1, 0) = matrix4x3.m12;
+    mat.at<double>(1, 1) = matrix4x3.m22;
+    mat.at<double>(1, 2) = matrix4x3.m32;
+    mat.at<double>(2, 0) = matrix4x3.m13;
+    mat.at<double>(2, 1) = matrix4x3.m23;
+    mat.at<double>(2, 2) = matrix4x3.m33;
+    return mat;
 }
 
 bool VideoStabilization::output() {
@@ -159,8 +165,8 @@ bool VideoStabilization::output() {
         string imagePath;
         ss >> imagePath;
         Mat frame = imread(imagePath);
-        /*transpose(frame, frame);
-        flip(frame, frame, 1);*/
+        transpose(frame, frame);
+        flip(frame, frame, 1);
         videoWriter << frame;
         rotate(frame, outputFrame, rotationMat(rotAngles[i]));
         cropFrame = outputFrame(Range(cropPercent * captureHeight, (1 - cropPercent) * captureHeight),
