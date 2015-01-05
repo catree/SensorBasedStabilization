@@ -361,7 +361,7 @@ void	Matrix4x3::fromQuaternion(const Quaternion &q) {
 
 	m11 = 1.0f - yy*q.y - zz*q.z;
 	m12 = xx*q.y + ww*q.z;
-	m13 = xx*q.z - ww*q.x;
+	m13 = xx*q.z - ww*q.y; //m13 = xx*q.z - ww*q.x
 
 	m21 = xx*q.y - ww*q.z;
 	m22 = 1.0f - xx*q.x - zz*q.z;
