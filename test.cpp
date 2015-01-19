@@ -1,5 +1,31 @@
 #include "test.h"
 
+double getPSNR(const Mat &I1, const Mat &I2) {
+    Mat s1;
+    absdiff(I1, I2, s1);       // |I1 - I2|
+    s1.convertTo(s1, CV_32F);  // cannot make a square on 8 bits
+    s1 = s1.mul(s1);           // |I1 - I2|^2
+
+    Scalar s = sum(s1);         // sum elements per channel
+
+    double sse = s.val[0] + s.val[1] + s.val[2]; // sum channels
+    vector<vector<Point> > contours;
+    Mat tmp;
+    cvtColor(I2, tmp, CV_RGB2GRAY);
+    findContours(tmp, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
+    //cout << contours.size();
+    double area = contours.size() > 0 ? contourArea(contours[0]) : I1.total();
+
+    if (sse <= 1e-10) // for small values return zero
+        return 0;
+    else {
+        //double mse = sse / (double) (I1.channels() * I1.total());
+        double mse = sse / (double) (I1.channels() * area);
+        double psnr = 10.0 * log10((255 * 255) / mse);
+        return psnr;
+    }
+}
+
 void test(string videoName) {
     const int rate = 100;
 
@@ -38,4 +64,68 @@ void test(string videoName) {
         cout << tmp - start << " " << e.pitch << " " << e.heading << " " << e.bank << endl;
     }
 
+}
+
+
+double searchAngle(const Mat &src, const Mat &dst, double st, double ed, double step, double &mpsnr) {
+    int captureWidth = src.cols, captureHeight = src.rows;
+    const double fuvX = 799, fuvY = 799;
+    double cx = captureWidth / 2, cy = captureHeight / 2;
+    Mat K = Mat::zeros(3, 3, CV_64F);
+    K.at<double>(0, 0) = fuvX;
+    K.at<double>(1, 1) = fuvY;
+    K.at<double>(0, 2) = cx;
+    K.at<double>(1, 2) = cy;
+    K.at<double>(2, 2) = 1;
+
+    double max = -100, angle = 0;
+    for (double x = st, y = 0, z = 0; x >= ed; x -= step) {
+        Mat R = VideoStabilization::rotationMat(angle2Quaternion(x, y, z));
+        Mat H = K * R.inv() * K.inv(), src2, dst2, diff;
+        warpPerspective(dst, dst2, H, Size(src.cols, src.rows), INTER_LINEAR + WARP_INVERSE_MAP);
+        /*diff = abs(dst2 - src);
+        char name[20];
+        sprintf(name, "diff/%f.jpg", x);
+        imwrite(name, diff);*/
+
+
+        src.copyTo(src2, dst2);
+        double psnr = getPSNR(src2, dst2);
+        //cout << x << " " << psnr << endl;
+        if (psnr > max) {
+            max = psnr;
+            angle = x;
+        }
+    }
+    mpsnr = max;
+    return angle;
+}
+
+Quaternion angle2Quaternion(double angX, double angY, double angZ) {
+    Quaternion q;
+    double magnitude = sqrt(angX * angX + angY * angY + angZ * angZ);
+    angX /= -magnitude;
+    angY /= magnitude;
+    angZ /= magnitude;
+    double thetaOverTwo = magnitude / 2.0f;
+    double sinThetaOverTwo = sin(thetaOverTwo);
+    double cosThetaOverTwo = cos(thetaOverTwo);
+    q.x = sinThetaOverTwo * angX;
+    q.y = sinThetaOverTwo * angY;
+    q.z = sinThetaOverTwo * angZ;
+    q.w = cosThetaOverTwo;
+    return q;
+}
+
+void testAngle(string videoName, string index) {
+    Mat src = imread(videoName + "/IMG_" + videoName + "_0.jpg");
+    Mat dst = imread(videoName + "/IMG_" + videoName + "_" + index + ".jpg");
+    transpose(src, src);
+    flip(src, src, 1);
+    transpose(dst, dst);
+    flip(dst, dst, 1);
+    double psnr;
+    double sAngle = -0.16 + 0.02;
+    double eAngle = searchAngle(src, dst, sAngle, sAngle - 0.04, 0.005, psnr);
+    cout << psnr << " " << searchAngle(src, dst, eAngle + 0.005, eAngle - 0.005, 0.001, psnr);
 }

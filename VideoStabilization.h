@@ -23,7 +23,7 @@ private:
 
     const int captureWidth = 544, captureHeight = 960;
     const double frameRate = 30, sensorRate = 100;
-    const double fuvX = 793, fuvY = 793;
+    const double fuvX = 799, fuvY = 799;
     Mat K;
     Mat outputFrame, cropFrame;
 
@@ -32,19 +32,20 @@ private:
     vector<int> timestamps;
     vector<double> angvX, angvY, angvZ;
     vector<EulerAngles> rotAngles;
+    vector<Quaternion> rotQuaternions;
     vector<Quaternion> p, v;
     vector<double> alpha;
 
     Quaternion angleToQuaternion(double angX, double angY, double angZ);
 
-    double computeAlpha(const EulerAngles &rotAngle);
+    double computeAlpha(Quaternion rotQuaternion);
 
-    EulerAngles computeRotation(const Quaternion &v, const Quaternion &p);
+    void computeRotation(Quaternion const &v, Quaternion const &p, int index);
 
 public:
     void rotate(const Mat &src, Mat &dst, const Mat &R);
 
-    Mat rotationMat(EulerAngles rotAngle);
+    static Mat rotationMat(Quaternion rotQuaternion);
 
     VideoStabilization(string videoName);
 
@@ -53,6 +54,7 @@ public:
     void show();
 
     bool output();
+
 };
 
 

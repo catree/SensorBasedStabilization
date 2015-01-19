@@ -1,5 +1,6 @@
 #include"VideoStabilization.h"
 #include "Matrix4x3.h"
+#include "test.h"
 
 VideoStabilization::VideoStabilization(string videoName) : name(videoName) {
     double cx = captureWidth / 2, cy = captureHeight / 2;
@@ -50,8 +51,8 @@ void VideoStabilization::show() {
         cout << i << " " << timestamps[i] << " "
                 << e.pitch << " " << e.heading << " " << e.bank
                 << "|" << ev.pitch << " " << ev.heading << " " << ev.bank
-                << "|" << alpha[i]
                 << "|" << rotAngles[i].pitch << " " << rotAngles[i].heading << " " << rotAngles[i].bank
+                << "|" << alpha[i]
                 << endl;
     }
 }
@@ -59,6 +60,7 @@ void VideoStabilization::show() {
 void VideoStabilization::smooth() {
     vector<Quaternion> vDelta(frames);
     rotAngles = vector<EulerAngles>(frames);
+    rotQuaternions = vector<Quaternion>(frames);
 
     v = vector<Quaternion>(frames);
     alpha = vector<double>(frames);
@@ -69,10 +71,11 @@ void VideoStabilization::smooth() {
     vDelta[0] = qi;
     for (int i = 1; i < frames; ++i) {
         v[i] = v[i - 1];
-        v[i] *= vDelta[i - 1];
-        rotAngles[i] = computeRotation(v[i], p[i]);
+        //v[i] *= vDelta[i - 1];
+        v[i] = p[i - 1];
+        computeRotation(v[i], p[i], i);
 
-        alpha[i] = computeAlpha(rotAngles[i]);
+        alpha[i] = computeAlpha(rotQuaternions[i]);
         if (alpha[i] == 1) {
             vDelta[i] = slerp(qi, vDelta[i - 1], d);
         }
@@ -94,12 +97,21 @@ void VideoStabilization::smooth() {
 
 Quaternion VideoStabilization::angleToQuaternion(double angX, double angY, double angZ) {
     Quaternion q;
-    EulerAngles e(angY / sensorRate, angX / sensorRate, angZ / sensorRate);
-    q.setToRotateInertialToObject(e);
+    double magnitude = sqrt(angX * angX + angY * angY + angZ * angZ);
+    angX /= -magnitude;
+    angY /= magnitude;
+    angZ /= magnitude;
+    double thetaOverTwo = magnitude / sensorRate / 2.0f;
+    double sinThetaOverTwo = sin(thetaOverTwo);
+    double cosThetaOverTwo = cos(thetaOverTwo);
+    q.x = sinThetaOverTwo * angX;
+    q.y = sinThetaOverTwo * angY;
+    q.z = sinThetaOverTwo * angZ;
+    q.w = cosThetaOverTwo;
     return q;
 }
 
-double VideoStabilization::computeAlpha(const EulerAngles &rotAngle) {
+double VideoStabilization::computeAlpha(Quaternion rotQuaternion) {
     double p1[3][1] = {{captureWidth * cropPercent}, {captureHeight * cropPercent}, {1}};
     double p2[3][1] = {{captureWidth * cropPercent}, {captureHeight * (1 - cropPercent)}, {1}};
     double p3[3][1] = {{captureWidth * (1 - cropPercent)}, {captureHeight * cropPercent}, {1}};
@@ -111,7 +123,7 @@ double VideoStabilization::computeAlpha(const EulerAngles &rotAngle) {
     points[3] = Mat(3, 1, CV_64F, p4);
     double omega = 0;
     double innerWidth = captureWidth * innerPercent, innerHeight = captureHeight * innerPercent;
-    Mat R = rotationMat(rotAngle);
+    Mat R = rotationMat(rotQuaternion);
     for (int i = 0; i < 4; ++i) {
         Mat newPoint = K * R.inv() * K.inv() * points[i];
         double cx = newPoint.at<double>(0, 0) / newPoint.at<double>(2, 0);
@@ -126,19 +138,14 @@ double VideoStabilization::computeAlpha(const EulerAngles &rotAngle) {
     return alphaMin + (1 - alphaMin) * (1 - pow(omega, beta));
 }
 
-EulerAngles VideoStabilization::computeRotation(const Quaternion &v, const Quaternion &p) {
-    EulerAngles rotAngle;
-    rotAngle.fromInertialToObjectQuaternion(conjugate(p) * v);
-    return rotAngle;
+void VideoStabilization::computeRotation(const Quaternion &v, const Quaternion &p, int index) {
+    rotQuaternions[index] = conjugate(p) * v;
+    rotAngles[index].fromInertialToObjectQuaternion(rotQuaternions[index]);
 }
 
-Mat VideoStabilization::rotationMat(EulerAngles rotAngle) {
+Mat VideoStabilization::rotationMat(Quaternion rotQuaternion) {
     Matrix4x3 matrix4x3;
-    Quaternion quaternion;
-    rotAngle.heading = -rotAngle.heading;
-    rotAngle.bank = -rotAngle.bank;
-    quaternion.setToRotateInertialToObject(rotAngle);
-    matrix4x3.fromQuaternion(quaternion);
+    matrix4x3.fromQuaternion(rotQuaternion);
     Mat mat = Mat::zeros(3, 3, CV_64F);
     mat.at<double>(0, 0) = matrix4x3.m11;
     mat.at<double>(0, 1) = matrix4x3.m21;
@@ -149,16 +156,29 @@ Mat VideoStabilization::rotationMat(EulerAngles rotAngle) {
     mat.at<double>(2, 0) = matrix4x3.m13;
     mat.at<double>(2, 1) = matrix4x3.m23;
     mat.at<double>(2, 2) = matrix4x3.m33;
+    /*mat.at<double>(0, 0) = matrix4x3.m11;
+    mat.at<double>(0, 1) = matrix4x3.m12;
+    mat.at<double>(0, 2) = matrix4x3.m13;
+    mat.at<double>(1, 0) = matrix4x3.m21;
+    mat.at<double>(1, 1) = matrix4x3.m22;
+    mat.at<double>(1, 2) = matrix4x3.m23;
+    mat.at<double>(2, 0) = matrix4x3.m31;
+    mat.at<double>(2, 1) = matrix4x3.m32;
+    mat.at<double>(2, 2) = matrix4x3.m33;*/
     return mat;
 }
 
 bool VideoStabilization::output() {
-    if (rotAngles.size() != frames)
+    if (rotQuaternions.size() != frames)
         return false;
     VideoWriter videoWriter(name + "/VID_" + name + ".avi", CV_FOURCC('M', 'J', 'P', 'G'),
             frameRate, Size(captureWidth, captureHeight));
     VideoWriter videoWriter1(name + "/VID_" + name + "_new.avi", CV_FOURCC('M', 'J', 'P', 'G'),
             frameRate, Size(captureWidth, captureHeight));
+
+    Mat oFrame = imread(name + "/IMG_" + name + "_0.jpg");
+    transpose(oFrame, oFrame);
+    flip(oFrame, oFrame, 1);
     for (int i = 0; i < frames; ++i) {
         stringstream ss;
         ss << name << "/IMG_" << name << "_" << i << ".jpg";
@@ -168,12 +188,22 @@ bool VideoStabilization::output() {
         transpose(frame, frame);
         flip(frame, frame, 1);
         videoWriter << frame;
-        rotate(frame, outputFrame, rotationMat(rotAngles[i]));
+        rotate(frame, outputFrame, rotationMat(rotQuaternions[i]));
+
+        double psnr;
+        double sAngle = (floor(rotAngles[i].pitch * 100) + 2) / 100.0;
+        double eAngle = searchAngle(oFrame, frame, sAngle, sAngle - 0.04, 0.005, psnr);
+        cout << i << " " << searchAngle(oFrame, frame, eAngle + 0.005, eAngle - 0.005, 0.001, psnr);
+        Mat frame2;
+        oFrame.copyTo(frame2, outputFrame);
+        cout << " " << getPSNR(frame2, outputFrame) << " " << psnr << endl;
+        oFrame = frame;
+
         cropFrame = outputFrame(Range(cropPercent * captureHeight, (1 - cropPercent) * captureHeight),
                 Range(cropPercent * captureWidth, (1 - cropPercent) * captureWidth));
-        imshow("ha", cropFrame);
+        //imshow("ha", outputFrame);
         videoWriter1 << outputFrame;
-        waitKey(1);
+        //waitKey(1);
     }
     cout << "Output complete!";
     return true;
