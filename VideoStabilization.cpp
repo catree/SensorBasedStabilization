@@ -35,24 +35,23 @@ VideoStabilization::VideoStabilization(string videoName) : name(videoName) {
     v = vector<Quaternion>(frames);
     alpha = vector<double>(frames);
 
-    long sensorTime;
+    long sensorTime = 0;
     Quaternion q, qi;
     q.identity();
     qi.identity();
     for (int i = 0; i < frames; ++i) {
-        double avx = 0, avy = 0, avz = 0;
-        dataFile >> sensorTime;
-        dataFile >> avx >> avy >> avz;
+        double avx, avy, avz;
         while ((sensorTime < timestamps[i] + startTime) && !dataFile.eof()) {
-            q *= angleToQuaternion(avx, avy, avz);
             dataFile >> sensorTime;
             dataFile >> avx >> avy >> avz;
+            q *= angleToQuaternion(avx, avy, avz);
         }
         float slerpFactor = (sensorTime - timestamps[i] - startTime) * sensorRate / 1000.0f;
-        q *= slerp(qi, angleToQuaternion(avx, avy, avz), 1 - slerpFactor);
+        Quaternion partQ = slerp(qi, angleToQuaternion(avx, avy, avz), slerpFactor);
+        q *= conjugate(partQ);
         if (i > 0)
             pDelta[i - 1] = q;
-        q = slerp(qi, angleToQuaternion(avx, avy, avz), slerpFactor);
+        q = partQ;
     }
     dataFile.close();
 }
@@ -204,14 +203,14 @@ bool VideoStabilization::output() {
         transpose(frame, frame);
         flip(frame, frame, 1);
         videoWriter << frame;
-        rotate(frame, outputFrame, rotationMat(rotQuaternions[i]));
-        /*if (i > 0)
+        //rotate(frame, outputFrame, rotationMat(rotQuaternions[i]));
+        if (i > 0)
             rotate(frame, outputFrame, rotationMat(rotQuaternions[i - 1]));
         else
-            outputFrame = frame.clone();*/
+            outputFrame = frame.clone();
 
 
-        double psnr;
+        /*double psnr;
         char dir = 0;
         double range = 0.12;
         double sAngle = (round((dir == 0 ? rotAngles[i].pitch : rotAngles[i].heading) * 100) + range * 50) / 100.0;
@@ -220,14 +219,14 @@ bool VideoStabilization::output() {
         cout << i << " " << bAngle;
         Mat frame2;
         oFrame.copyTo(frame2, outputFrame);
-        cout << " " << getPSNR(frame2, outputFrame) << " " << psnr << endl;
+        cout << " " << getPSNR(frame2, outputFrame) << " " << psnr << endl;*/
         //rotate(frame, outputFrame, rotationMat(angle2Quaternion(bAngle, 0, 0)));
 
-        /*cropFrame = outputFrame(Range(cropPercent * captureHeight, (1 - cropPercent) * captureHeight),
+        cropFrame = outputFrame(Range(cropPercent * captureHeight, (1 - cropPercent) * captureHeight),
                 Range(cropPercent * captureWidth, (1 - cropPercent) * captureWidth));
         imshow("ha", cropFrame);
         videoWriter1 << outputFrame;
-        waitKey(1);*/
+        waitKey(1);
     }
     cout << "Output complete!";
     return true;

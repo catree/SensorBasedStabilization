@@ -16,7 +16,7 @@ using namespace cv;
 using namespace std;
 
 int main() {
-    const string videoName = "20150126_154432";
+    const string videoName = "20150209_161224";
     //const string videoName = "20141229_161612"; //z
     //const string videoName = "20150104_105644"; //x
     //const string videoName = "20150104_105709"; //y
