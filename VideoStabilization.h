@@ -21,9 +21,13 @@ private:
     const double cropPercent = 0.15, innerPercent = 0.025;
     const int beta = 1.2;
 
-    const int captureWidth = 544, captureHeight = 960;
-    const double frameRate = 30, sensorRate = 100;
-    const double fuvX = 799, fuvY = 799;
+    /*const int captureWidth = 544, captureHeight = 960;
+    const double sensorRate = 100;
+    const double fuvX = 799, fuvY = 799;*/
+    const int captureWidth = 480, captureHeight = 864;
+    const float sensorRate = 50;
+    const double fuvX = 744.5, fuvY = 744.5;
+    double frameRate;
     Mat K;
     Mat outputFrame, cropFrame;
 
@@ -33,7 +37,7 @@ private:
     vector<double> angvX, angvY, angvZ;
     vector<EulerAngles> rotAngles;
     vector<Quaternion> rotQuaternions;
-    vector<Quaternion> p, v;
+    vector<Quaternion> p, v, pDelta;
     vector<double> alpha;
 
     Quaternion angleToQuaternion(double angX, double angY, double angZ);
@@ -42,7 +46,10 @@ private:
 
     void computeRotation(Quaternion const &v, Quaternion const &p, int index);
 
+
 public:
+    static EulerAngles quaternionToAngle(Quaternion q);
+
     void rotate(const Mat &src, Mat &dst, const Mat &R);
 
     static Mat rotationMat(Quaternion rotQuaternion);

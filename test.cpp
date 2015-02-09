@@ -67,10 +67,11 @@ void test(string videoName) {
 }
 
 
-double searchAngle(const Mat &src, const Mat &dst, double st, double ed, double step, double &mpsnr) {
+double searchAngle(const Mat &src, const Mat &dst, double st, double ed, double step, char dir, double &mpsnr) {
     int captureWidth = src.cols, captureHeight = src.rows;
-    const double fuvX = 799, fuvY = 799;
-    double cx = captureWidth / 2, cy = captureHeight / 2;
+    //const double fuvX = 799, fuvY = 799;
+    const double fuvX = 744.5, fuvY = 744.5;
+    double cx = captureWidth / 2 - 0.5, cy = captureHeight / 2 - 0.5;
     Mat K = Mat::zeros(3, 3, CV_64F);
     K.at<double>(0, 0) = fuvX;
     K.at<double>(1, 1) = fuvY;
@@ -79,19 +80,13 @@ double searchAngle(const Mat &src, const Mat &dst, double st, double ed, double 
     K.at<double>(2, 2) = 1;
 
     double max = -100, angle = 0;
-    for (double x = st, y = 0, z = 0; x >= ed; x -= step) {
-        Mat R = VideoStabilization::rotationMat(angle2Quaternion(x, y, z));
+    for (double x = st; x >= ed; x -= step) {
+        Mat R = VideoStabilization::rotationMat(angle2Quaternion(x * (dir == 0), x * (dir == 1), 0));
         Mat H = K * R.inv() * K.inv(), src2, dst2, diff;
         warpPerspective(dst, dst2, H, Size(src.cols, src.rows), INTER_LINEAR + WARP_INVERSE_MAP);
-        /*diff = abs(dst2 - src);
-        char name[20];
-        sprintf(name, "diff/%f.jpg", x);
-        imwrite(name, diff);*/
-
 
         src.copyTo(src2, dst2);
         double psnr = getPSNR(src2, dst2);
-        //cout << x << " " << psnr << endl;
         if (psnr > max) {
             max = psnr;
             angle = x;
@@ -125,7 +120,8 @@ void testAngle(string videoName, string index) {
     transpose(dst, dst);
     flip(dst, dst, 1);
     double psnr;
-    double sAngle = -0.16 + 0.02;
-    double eAngle = searchAngle(src, dst, sAngle, sAngle - 0.04, 0.005, psnr);
-    cout << psnr << " " << searchAngle(src, dst, eAngle + 0.005, eAngle - 0.005, 0.001, psnr);
+    double sAngle = 0.16 + 0.02;
+    char dir = 1;
+    double eAngle = searchAngle(src, dst, sAngle, sAngle - 0.04, 0.005, dir, psnr);
+    cout << psnr << " " << searchAngle(src, dst, eAngle + 0.005, eAngle - 0.005, 0.001, dir, psnr);
 }

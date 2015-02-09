@@ -3,7 +3,7 @@
 #include "test.h"
 
 VideoStabilization::VideoStabilization(string videoName) : name(videoName) {
-    double cx = captureWidth / 2, cy = captureHeight / 2;
+    double cx = captureWidth / 2 - 0.5, cy = captureHeight / 2 - 0.5;
     K = Mat::zeros(3, 3, CV_64F);
     K.at<double>(0, 0) = fuvX;
     K.at<double>(1, 1) = fuvY;
@@ -15,6 +15,7 @@ VideoStabilization::VideoStabilization(string videoName) : name(videoName) {
     double tmp;
     dataFile >> frames;
     dataFile >> tmp;
+    frameRate = round(tmp);
 
     long startTime;
     dataFile >> startTime >> tmp;
@@ -26,19 +27,32 @@ VideoStabilization::VideoStabilization(string videoName) : name(videoName) {
         timestamps[i] = time - startTime;
         dataFile >> tmp;
     }
-    Quaternion q;
+
     p = vector<Quaternion>(frames);
-    q.identity();
+    pDelta = vector<Quaternion>(frames);
+    rotAngles = vector<EulerAngles>(frames);
+    rotQuaternions = vector<Quaternion>(frames);
+    v = vector<Quaternion>(frames);
+    alpha = vector<double>(frames);
+
     long sensorTime;
-    dataFile >> sensorTime;
+    Quaternion q, qi;
+    q.identity();
+    qi.identity();
     for (int i = 0; i < frames; ++i) {
-        double avx, avy, avz;
+        double avx = 0, avy = 0, avz = 0;
+        dataFile >> sensorTime;
+        dataFile >> avx >> avy >> avz;
         while ((sensorTime < timestamps[i] + startTime) && !dataFile.eof()) {
-            dataFile >> avx >> avy >> avz;
-            dataFile >> sensorTime;
             q *= angleToQuaternion(avx, avy, avz);
+            dataFile >> sensorTime;
+            dataFile >> avx >> avy >> avz;
         }
-        p[i] = q;
+        float slerpFactor = (sensorTime - timestamps[i] - startTime) * sensorRate / 1000.0f;
+        q *= slerp(qi, angleToQuaternion(avx, avy, avz), 1 - slerpFactor);
+        if (i > 0)
+            pDelta[i - 1] = q;
+        q = slerp(qi, angleToQuaternion(avx, avy, avz), slerpFactor);
     }
     dataFile.close();
 }
@@ -46,8 +60,10 @@ VideoStabilization::VideoStabilization(string videoName) : name(videoName) {
 void VideoStabilization::show() {
     EulerAngles e, ev;
     for (int i = 0; i < frames; ++i) {
-        e.fromInertialToObjectQuaternion(p[i]);
-        ev.fromInertialToObjectQuaternion(v[i]);
+        /*e.fromInertialToObjectQuaternion(p[i]);
+        ev.fromInertialToObjectQuaternion(v[i]);*/
+        e = quaternionToAngle(p[i]);
+        ev = quaternionToAngle(v[i]);
         cout << i << " " << timestamps[i] << " "
                 << e.pitch << " " << e.heading << " " << e.bank
                 << "|" << ev.pitch << " " << ev.heading << " " << ev.bank
@@ -59,20 +75,19 @@ void VideoStabilization::show() {
 
 void VideoStabilization::smooth() {
     vector<Quaternion> vDelta(frames);
-    rotAngles = vector<EulerAngles>(frames);
-    rotQuaternions = vector<Quaternion>(frames);
 
-    v = vector<Quaternion>(frames);
-    alpha = vector<double>(frames);
     Quaternion qi;
     qi.identity();
 
-    v[0] = p[0];
+    v[0] = p[0] = qi;
     vDelta[0] = qi;
     for (int i = 1; i < frames; ++i) {
+        p[i] = p[i - 1] * pDelta[i - 1];
         v[i] = v[i - 1];
-        //v[i] *= vDelta[i - 1];
-        v[i] = p[i - 1];
+        v[i] *= vDelta[i - 1];
+        /*if (i == 196)
+            p[i]=qi;*/
+        //v[i] = p[i - 1];
         computeRotation(v[i], p[i], i);
 
         alpha[i] = computeAlpha(rotQuaternions[i]);
@@ -140,7 +155,8 @@ double VideoStabilization::computeAlpha(Quaternion rotQuaternion) {
 
 void VideoStabilization::computeRotation(const Quaternion &v, const Quaternion &p, int index) {
     rotQuaternions[index] = conjugate(p) * v;
-    rotAngles[index].fromInertialToObjectQuaternion(rotQuaternions[index]);
+    //rotAngles[index].fromInertialToObjectQuaternion(rotQuaternions[index]);
+    rotAngles[index] = quaternionToAngle(rotQuaternions[index]);
 }
 
 Mat VideoStabilization::rotationMat(Quaternion rotQuaternion) {
@@ -189,21 +205,29 @@ bool VideoStabilization::output() {
         flip(frame, frame, 1);
         videoWriter << frame;
         rotate(frame, outputFrame, rotationMat(rotQuaternions[i]));
+        /*if (i > 0)
+            rotate(frame, outputFrame, rotationMat(rotQuaternions[i - 1]));
+        else
+            outputFrame = frame.clone();*/
+
 
         double psnr;
-        double sAngle = (floor(rotAngles[i].pitch * 100) + 2) / 100.0;
-        double eAngle = searchAngle(oFrame, frame, sAngle, sAngle - 0.04, 0.005, psnr);
-        cout << i << " " << searchAngle(oFrame, frame, eAngle + 0.005, eAngle - 0.005, 0.001, psnr);
+        char dir = 0;
+        double range = 0.12;
+        double sAngle = (round((dir == 0 ? rotAngles[i].pitch : rotAngles[i].heading) * 100) + range * 50) / 100.0;
+        double eAngle = searchAngle(oFrame, frame, sAngle, sAngle - range, 0.005, dir, psnr);
+        double bAngle = searchAngle(oFrame, frame, eAngle + 0.005, eAngle - 0.005, 0.001, dir, psnr);
+        cout << i << " " << bAngle;
         Mat frame2;
         oFrame.copyTo(frame2, outputFrame);
         cout << " " << getPSNR(frame2, outputFrame) << " " << psnr << endl;
-        oFrame = frame;
+        //rotate(frame, outputFrame, rotationMat(angle2Quaternion(bAngle, 0, 0)));
 
-        cropFrame = outputFrame(Range(cropPercent * captureHeight, (1 - cropPercent) * captureHeight),
+        /*cropFrame = outputFrame(Range(cropPercent * captureHeight, (1 - cropPercent) * captureHeight),
                 Range(cropPercent * captureWidth, (1 - cropPercent) * captureWidth));
-        //imshow("ha", outputFrame);
+        imshow("ha", cropFrame);
         videoWriter1 << outputFrame;
-        //waitKey(1);
+        waitKey(1);*/
     }
     cout << "Output complete!";
     return true;
@@ -212,4 +236,16 @@ bool VideoStabilization::output() {
 void VideoStabilization::rotate(const Mat &src, Mat &dst, const Mat &R) {
     Mat H = K * R.inv() * K.inv();
     warpPerspective(src, dst, H, Size(src.cols, src.rows), INTER_LINEAR + WARP_INVERSE_MAP);
+}
+
+EulerAngles VideoStabilization::quaternionToAngle(Quaternion q) {
+    EulerAngles e;
+    double sinTheta = sqrt(1 - q.w * q.w);
+    double theta = acos(q.w) * 2;
+    if (sinTheta > 0.0001)
+        e = EulerAngles(q.y / sinTheta * theta,
+                -q.x / sinTheta * theta, q.z / sinTheta * theta);
+    else
+        e = EulerAngles(0, 0, 0);
+    return e;
 }

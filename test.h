@@ -17,7 +17,7 @@ using namespace cv;
 
 void test(string videoName);
 
-double searchAngle(const Mat &src, const Mat &dst, double st, double ed, double step, double &mpsnr);
+double searchAngle(const Mat &src, const Mat &dst, double st, double ed, double step, char dir, double &mpsnr);
 
 Quaternion angle2Quaternion(double angX, double angY, double angZ);
 

@@ -16,7 +16,7 @@ using namespace cv;
 using namespace std;
 
 int main() {
-    const string videoName = "20150116_110815";
+    const string videoName = "20150126_154432";
     //const string videoName = "20141229_161612"; //z
     //const string videoName = "20150104_105644"; //x
     //const string videoName = "20150104_105709"; //y
@@ -25,33 +25,20 @@ int main() {
     a.smooth();
     a.show();
     a.output();
-    /*testAngle(videoName, "70");
+
+    /*Quaternion q = angle2Quaternion(-0.1, -0.2, -0.3);
+    EulerAngles e = VideoStabilization::quaternionToAngle(q);
+    cout << e.pitch << " " << e.heading << " " << e.bank;*/
+    /*testAngle(videoName, "117");
     waitKey(0);*/
 
 /*    Mat b = imread("1.jpg"), b1;
-    a.rotate(b, b1, a.rotationMat(EulerAngles(0.1, 0, 0.1)));
+    a.rotate(b, b1,         a.rotationMat(EulerAngles(0.1, 0, 0.1)));
     a.rotate(b, b1, a.rotationMat(EulerAngles(-0.1, 0, -0.1)));
 //    a.rotate(b1, b1, a.rotationMat(EulerAngles(0, 0, -0.1)));
 //    a.rotate(b1, b1, a.rotationMat(EulerAngles(-0.1, 0, 0)));
     imshow("ha", b1);
     waitKey(0);*/
-    /*Quaternion q, q1, q2, q3, q4, q5;
-    Matrix4x3 m;
-    EulerAngles e;
-    q.setToRotateInertialToObject(EulerAngles(0, 0, 0.05));
-    q*=q;
-    q*=q;
-    q*=q;
-    q*=q;
-    q*=q;
-    q*=q;
-    q*=q;
-    q*=q;
-    q*=q;
-    q*=q;
-    q*=q;
-    q*=q;
-    e.fromInertialToObjectQuaternion(q);*/
     return 0;
 }
 
