@@ -35,6 +35,7 @@ VideoStabilization::VideoStabilization(string videoName) : name(videoName) {
     v = vector<Quaternion>(frames);
     alpha = vector<double>(frames);
 
+    startTime -= 1000 / frameRate;
     long sensorTime = 0;
     Quaternion q, qi;
     q.identity();
@@ -203,11 +204,11 @@ bool VideoStabilization::output() {
         transpose(frame, frame);
         flip(frame, frame, 1);
         videoWriter << frame;
-        //rotate(frame, outputFrame, rotationMat(rotQuaternions[i]));
-        if (i > 0)
+        rotate(frame, outputFrame, rotationMat(rotQuaternions[i]));
+        /*if (i > 0)
             rotate(frame, outputFrame, rotationMat(rotQuaternions[i - 1]));
         else
-            outputFrame = frame.clone();
+            outputFrame = frame.clone();*/
 
 
         /*double psnr;
