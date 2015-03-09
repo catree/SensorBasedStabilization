@@ -32,7 +32,6 @@ private:
     int frames;
     string name;
     vector<int> timestamps;
-    vector<double> angvX, angvY, angvZ;
     vector<EulerAngles> rotAngles;
     vector<Quaternion> rotQuaternions;
     vector<Quaternion> p, v, pDelta;
