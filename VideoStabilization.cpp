@@ -243,11 +243,10 @@ void VideoStabilization::rotate(const Mat &src, Mat &dst, const Mat &R) {
 
 EulerAngles VideoStabilization::quaternionToAngle(Quaternion q) {
     EulerAngles e;
-    double sinTheta = sqrt(1 - q.w * q.w);
-    double theta = acos(q.w) * 2;
+    float sinTheta = sqrt(1 - q.w * q.w);
+    float theta = acos(q.w) * 2;
     if (sinTheta > 0.0001)
-        e = EulerAngles(q.y / sinTheta * theta,
-                -q.x / sinTheta * theta, q.z / sinTheta * theta);
+        e = EulerAngles(q.y / sinTheta * theta, -q.x / sinTheta * theta, q.z / sinTheta * theta);
     else
         e = EulerAngles(0, 0, 0);
     return e;
