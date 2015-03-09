@@ -9,24 +9,25 @@
 #include<string>
 #include"Quaternion.h"
 #include "EulerAngles.h"
+#include "Parameters.h"
 
 using namespace cv;
 using namespace std;
-
 
 class VideoStabilization {
 private:
     const double d = 0.6;
     const double alphaMin = 0.6;
     const double cropPercent = 0.15, innerPercent = 0.025;
-    const int beta = 1.2;
+    const double beta = 2;
 
     /*const int captureWidth = 544, captureHeight = 960;
     const double sensorRate = 100;
     const double fuvX = 799, fuvY = 799;*/
-    const int captureWidth = 480, captureHeight = 864;
-    const float sensorRate = 50;
-    const double fuvX = 744.5, fuvY = 744.5;
+    const int captureWidth, captureHeight;
+    const float sensorRate;
+    const double fuvX, fuvY;
+
     double frameRate;
     Mat K;
     Mat outputFrame, cropFrame;
@@ -54,7 +55,7 @@ public:
 
     static Mat rotationMat(Quaternion rotQuaternion);
 
-    VideoStabilization(string videoName);
+    VideoStabilization(string videoName, CameraParams cameraParams = cameraParamsXIAOMI4);
 
     void smooth();
 
