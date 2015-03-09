@@ -21,9 +21,6 @@ private:
     const double cropPercent = 0.15, innerPercent = 0.025;
     const double beta = 2;
 
-    /*const int captureWidth = 544, captureHeight = 960;
-    const double sensorRate = 100;
-    const double fuvX = 799, fuvY = 799;*/
     const int captureWidth, captureHeight;
     const float sensorRate;
     const double fuvX, fuvY;

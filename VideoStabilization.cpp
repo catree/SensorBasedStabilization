@@ -4,11 +4,8 @@
 
 VideoStabilization::VideoStabilization(string videoName, CameraParams cameraParams) :
         name(videoName),
-        captureWidth(cameraParams.width),
-        captureHeight(cameraParams.height),
-        sensorRate(cameraParams.sensorRate),
-        fuvX(cameraParams.fuvX),
-        fuvY(cameraParams.fuvY) {
+        captureWidth(cameraParams.width), captureHeight(cameraParams.height),
+        sensorRate(cameraParams.sensorRate), fuvX(cameraParams.fuvX), fuvY(cameraParams.fuvY) {
     double cx = captureWidth / 2 - 0.5, cy = captureHeight / 2 - 0.5;
     K = Mat::zeros(3, 3, CV_64F);
     K.at<double>(0, 0) = fuvX;
