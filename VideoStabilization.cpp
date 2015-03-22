@@ -195,9 +195,6 @@ bool VideoStabilization::output() {
     VideoWriter videoWriter1(name + "/VID_" + name + "_new.avi", CV_FOURCC('M', 'J', 'P', 'G'),
             frameRate, Size(captureWidth, captureHeight));
 
-    Mat oFrame = imread(name + "/IMG_" + name + "_0.jpg");
-    transpose(oFrame, oFrame);
-    flip(oFrame, oFrame, 1);
     for (int i = 0; i < frames; ++i) {
         stringstream ss;
         ss << name << "/IMG_" << name << "_" << i << ".jpg";
@@ -208,23 +205,6 @@ bool VideoStabilization::output() {
         flip(frame, frame, 1);
         videoWriter << frame;
         rotate(frame, outputFrame, rotationMat(rotQuaternions[i]));
-        /*if (i > 0)
-            rotate(frame, outputFrame, rotationMat(rotQuaternions[i - 1]));
-        else
-            outputFrame = frame.clone();*/
-
-
-        /*double psnr;
-        char dir = 0;
-        double range = 0.12;
-        double sAngle = (round((dir == 0 ? rotAngles[i].pitch : rotAngles[i].heading) * 100) + range * 50) / 100.0;
-        double eAngle = searchAngle(oFrame, frame, sAngle, sAngle - range, 0.005, dir, psnr);
-        double bAngle = searchAngle(oFrame, frame, eAngle + 0.005, eAngle - 0.005, 0.001, dir, psnr);
-        cout << i << " " << bAngle;
-        Mat frame2;
-        oFrame.copyTo(frame2, outputFrame);
-        cout << " " << getPSNR(frame2, outputFrame) << " " << psnr << endl;*/
-        //rotate(frame, outputFrame, rotationMat(angle2Quaternion(bAngle, 0, 0)));
 
         cropFrame = outputFrame(Range(cropPercent * captureHeight, (1 - cropPercent) * captureHeight),
                 Range(cropPercent * captureWidth, (1 - cropPercent) * captureWidth));
