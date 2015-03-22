@@ -43,6 +43,7 @@ private:
 
     void computeRotation(Quaternion const &v, Quaternion const &p, int index);
 
+    void getFrameByJpg(Mat &frame, int index);
 
 public:
     static EulerAngles quaternionToAngle(Quaternion q);

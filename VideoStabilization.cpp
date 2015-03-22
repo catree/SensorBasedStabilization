@@ -196,13 +196,8 @@ bool VideoStabilization::output() {
             frameRate, Size(captureWidth, captureHeight));
 
     for (int i = 0; i < frames; ++i) {
-        stringstream ss;
-        ss << name << "/IMG_" << name << "_" << i << ".jpg";
-        string imagePath;
-        ss >> imagePath;
-        Mat frame = imread(imagePath);
-        transpose(frame, frame);
-        flip(frame, frame, 1);
+        Mat frame;
+        getFrameByJpg(frame, i);
         videoWriter << frame;
         rotate(frame, outputFrame, rotationMat(rotQuaternions[i]));
 
@@ -215,6 +210,18 @@ bool VideoStabilization::output() {
     cout << "Output complete!";
     return true;
 }
+
+
+void VideoStabilization::getFrameByJpg(Mat &frame, int index) {
+    stringstream ss;
+    ss << name << "/IMG_" << name << "_" << index << ".jpg";
+    string imagePath;
+    ss >> imagePath;
+    frame = imread(imagePath);
+    transpose(frame, frame);
+    flip(frame, frame, 1);
+}
+
 
 void VideoStabilization::rotate(const Mat &src, Mat &dst, const Mat &R) {
     Mat H = K * R.inv() * K.inv();
