@@ -10,3 +10,4 @@ struct CameraParams {
 
 const CameraParams cameraParamsXIAOMI4(480, 864, 50, 744.5, 744.5);
 const CameraParams cameraParamsHUAWEIP7(544, 960, 100, 799, 799);
+const CameraParams cameraParmasVSTAB(1920, 1080, 200, 1.7466, 1.7466);
