@@ -24,6 +24,7 @@ private:
     const int captureWidth, captureHeight;
     const float sensorRate;
     const double fuvX, fuvY;
+    const string inputType;
 
     double frameRate;
     Mat K;
@@ -44,6 +45,8 @@ private:
     void computeRotation(Quaternion const &v, Quaternion const &p, int index);
 
     void getFrameByJpg(Mat &frame, int index);
+
+    void getFrameByMp4(Mat &frame);
 
 public:
     static EulerAngles quaternionToAngle(Quaternion q);

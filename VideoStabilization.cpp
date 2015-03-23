@@ -3,7 +3,7 @@
 #include "test.h"
 
 VideoStabilization::VideoStabilization(string videoName, CameraParams cameraParams) :
-        name(videoName),
+        name(videoName), inputType(cameraParams.fileType),
         captureWidth(cameraParams.width), captureHeight(cameraParams.height),
         sensorRate(cameraParams.sensorRate), fuvX(cameraParams.fuvX), fuvY(cameraParams.fuvY) {
     double cx = captureWidth / 2 - 0.5, cy = captureHeight / 2 - 0.5;
@@ -197,8 +197,12 @@ bool VideoStabilization::output() {
 
     for (int i = 0; i < frames; ++i) {
         Mat frame;
-        getFrameByJpg(frame, i);
+        if (inputType == "mp4")
+            getFrameByMp4(frame);
+        else
+            getFrameByJpg(frame, i);
         videoWriter << frame;
+        cout << i << endl;
         rotate(frame, outputFrame, rotationMat(rotQuaternions[i]));
 
         cropFrame = outputFrame(Range(cropPercent * captureHeight, (1 - cropPercent) * captureHeight),
@@ -222,6 +226,10 @@ void VideoStabilization::getFrameByJpg(Mat &frame, int index) {
     flip(frame, frame, 1);
 }
 
+void VideoStabilization::getFrameByMp4(Mat &frame) {
+    static VideoCapture video(name + "/" + name + ".mp4");
+    video >> frame;
+}
 
 void VideoStabilization::rotate(const Mat &src, Mat &dst, const Mat &R) {
     Mat H = K * R.inv() * K.inv();
@@ -238,3 +246,4 @@ EulerAngles VideoStabilization::quaternionToAngle(Quaternion q) {
         e = EulerAngles(0, 0, 0);
     return e;
 }
+
