@@ -63,8 +63,6 @@ VideoStabilization::VideoStabilization(string videoName, CameraParams cameraPara
 void VideoStabilization::show() {
     EulerAngles e, ev;
     for (int i = 0; i < frames; ++i) {
-        /*e.fromInertialToObjectQuaternion(p[i]);
-        ev.fromInertialToObjectQuaternion(v[i]);*/
         e = quaternionToAngle(p[i]);
         ev = quaternionToAngle(v[i]);
         cout << i << " " << timestamps[i] << " "
@@ -88,9 +86,6 @@ void VideoStabilization::smooth() {
         p[i] = p[i - 1] * pDelta[i - 1];
         v[i] = v[i - 1];
         v[i] *= vDelta[i - 1];
-        /*if (i == 196)
-            p[i]=qi;*/
-        //v[i] = p[i - 1];
         computeRotation(v[i], p[i], i);
 
         alpha[i] = computeAlpha(rotQuaternions[i]);
@@ -158,7 +153,6 @@ double VideoStabilization::computeAlpha(Quaternion rotQuaternion) {
 
 void VideoStabilization::computeRotation(const Quaternion &v, const Quaternion &p, int index) {
     rotQuaternions[index] = conjugate(p) * v;
-    //rotAngles[index].fromInertialToObjectQuaternion(rotQuaternions[index]);
     rotAngles[index] = quaternionToAngle(rotQuaternions[index]);
 }
 
@@ -194,6 +188,8 @@ bool VideoStabilization::output() {
             frameRate, Size(captureWidth, captureHeight));
     VideoWriter videoWriter1(name + "/VID_" + name + "_new.avi", CV_FOURCC('M', 'J', 'P', 'G'),
             frameRate, Size(captureWidth, captureHeight));
+    VideoWriter videoWriter2(name + "/VID_" + name + "_newc.avi", CV_FOURCC('M', 'J', 'P', 'G'),
+            frameRate, Size(captureWidth * (1 - 2 * cropPercent), captureHeight * (1 - 2 * cropPercent)));
 
     for (int i = 0; i < frames; ++i) {
         Mat frame;
@@ -209,6 +205,7 @@ bool VideoStabilization::output() {
                 Range(cropPercent * captureWidth, (1 - cropPercent) * captureWidth));
         imshow("ha", cropFrame);
         videoWriter1 << outputFrame;
+        videoWriter2 << cropFrame;
         waitKey(1);
     }
     cout << "Output complete!";
