@@ -6,13 +6,7 @@ VideoStabilization::VideoStabilization(string videoName, CameraParams cameraPara
         name(videoName), inputType(cameraParams.fileType),
         captureWidth(cameraParams.width), captureHeight(cameraParams.height),
         sensorRate(cameraParams.sensorRate), fuvX(cameraParams.fuvX), fuvY(cameraParams.fuvY) {
-    double cx = captureWidth / 2 - 0.5, cy = captureHeight / 2 - 0.5;
-    K = Mat::zeros(3, 3, CV_64F);
-    K.at<double>(0, 0) = fuvX;
-    K.at<double>(1, 1) = fuvY;
-    K.at<double>(0, 2) = cx;
-    K.at<double>(1, 2) = cy;
-    K.at<double>(2, 2) = 1;
+    initK();
 
     ifstream dataFile((videoName + "/TXT_" + videoName + ".txt").c_str());
     double tmp;
@@ -244,3 +238,12 @@ EulerAngles VideoStabilization::quaternionToAngle(Quaternion q) {
     return e;
 }
 
+void VideoStabilization::initK() {
+    double cx = captureWidth / 2 - 0.5, cy = captureHeight / 2 - 0.5;
+    K = Mat::zeros(3, 3, CV_64F);
+    K.at<double>(0, 0) = fuvX;
+    K.at<double>(1, 1) = fuvY;
+    K.at<double>(0, 2) = cx;
+    K.at<double>(1, 2) = cy;
+    K.at<double>(2, 2) = 1;
+}

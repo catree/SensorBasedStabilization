@@ -48,6 +48,8 @@ private:
 
     void getFrameByMp4(Mat &frame);
 
+    void initK();
+
 public:
     static EulerAngles quaternionToAngle(Quaternion q);
 
