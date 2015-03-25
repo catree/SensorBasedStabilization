@@ -13,14 +13,12 @@ double getPSNR(const Mat &I1, const Mat &I2) {
     Mat tmp;
     cvtColor(I2, tmp, CV_RGB2GRAY);
     findContours(tmp, contours, CV_RETR_EXTERNAL, CV_CHAIN_APPROX_SIMPLE);
-    //cout << contours.size();
     double area = contours.size() > 0 ? contourArea(contours[0]) : I1.total();
 
     if (sse <= 1e-10) // for small values return zero
         return 0;
     else {
-        //double mse = sse / (double) (I1.channels() * I1.total());
-        double mse = sse / (double) (I1.channels() * area);
+        double mse = sse / (I1.channels() * area);
         double psnr = 10.0 * log10((255 * 255) / mse);
         return psnr;
     }

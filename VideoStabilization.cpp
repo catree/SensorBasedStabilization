@@ -9,6 +9,8 @@ VideoStabilization::VideoStabilization(string videoName, CameraParams cameraPara
     initK();
 
     ifstream dataFile((videoName + "/TXT_" + videoName + ".txt").c_str());
+    if (!dataFile.is_open())
+        assert("The file does not exist!");
     double tmp;
     dataFile >> frames;
     dataFile >> tmp;
