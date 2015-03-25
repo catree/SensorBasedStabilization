@@ -16,10 +16,10 @@ using namespace std;
 
 class VideoStabilization {
 private:
-    const double d = 0.6;
-    const double alphaMin = 0.6;
-    const double cropPercent = 0.15, innerPercent = 0.025;
-    const double beta = 2;
+    static const double d;
+    static const double alphaMin;
+    static const double cropPercent, innerPercent;
+    static const double beta;
 
     const int captureWidth, captureHeight;
     const float sensorRate;

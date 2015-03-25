@@ -2,6 +2,11 @@
 #include "Matrix4x3.h"
 #include "test.h"
 
+const double VideoStabilization::d = 0.6;
+const double VideoStabilization::alphaMin = 0.6;
+const double VideoStabilization::cropPercent = 0.1, VideoStabilization::innerPercent = 0.05;
+const double VideoStabilization::beta = 2;
+
 VideoStabilization::VideoStabilization(string videoName, CameraParams cameraParams) :
         name(videoName), inputType(cameraParams.fileType),
         captureWidth(cameraParams.width), captureHeight(cameraParams.height),
