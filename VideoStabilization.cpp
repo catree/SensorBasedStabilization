@@ -112,7 +112,7 @@ void VideoStabilization::smooth() {
 Quaternion VideoStabilization::angleToQuaternion(double angX, double angY, double angZ) {
     Quaternion q;
     double magnitude = sqrt(angX * angX + angY * angY + angZ * angZ);
-    angX /= -magnitude;
+    angX /= -magnitude; //rotate 180 degrees along the x axis
     angY /= magnitude;
     angZ /= magnitude;
     double thetaOverTwo = magnitude / sensorRate / 2.0f;
@@ -236,12 +236,13 @@ void VideoStabilization::rotate(const Mat &src, Mat &dst, const Mat &R) {
 
 EulerAngles VideoStabilization::quaternionToAngle(Quaternion q) {
     EulerAngles e;
-    float sinTheta = sqrt(1 - q.w * q.w);
+    float sinThetaOverTwo = sqrt(1 - q.w * q.w);
     float theta = acos(q.w) * 2;
-    if (sinTheta > 0.0001)
-        e = EulerAngles(q.y / sinTheta * theta, -q.x / sinTheta * theta, q.z / sinTheta * theta);
+    if (sinThetaOverTwo > 0.000001)
+        e = EulerAngles(q.y / sinThetaOverTwo * theta, -q.x / sinThetaOverTwo * theta,
+                q.z / sinThetaOverTwo * theta);
     else
-        e = EulerAngles(0, 0, 0);
+        e = EulerAngles(2 * q.y / q.w, -2 * q.x, 2 * q.z / q.w);
     return e;
 }
 
