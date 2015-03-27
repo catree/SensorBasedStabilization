@@ -39,7 +39,6 @@ VideoStabilization::VideoStabilization(string videoName, CameraParams cameraPara
     v = vector<Quaternion>(frames);
     alpha = vector<double>(frames);
 
-    startTime -= 1000 / frameRate;
     long sensorTime = 0;
     Quaternion q, qi;
     q.identity();
