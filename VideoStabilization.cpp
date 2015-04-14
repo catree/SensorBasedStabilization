@@ -76,8 +76,7 @@ void VideoStabilization::show() {
     for (int i = 0; i < frames; ++i) {
         e = quaternionToAngle(p[i]);
         ev = quaternionToAngle(v[i]);
-        cout << i << " " << timestamps[i] << " "
-        << e.pitch << " " << e.heading << " " << e.bank
+        cout << i << " " << e.pitch << " " << e.heading << " " << e.bank
         << "|" << ev.pitch << " " << ev.heading << " " << ev.bank
         << "|" << rotAngles[i].pitch << " " << rotAngles[i].heading << " " << rotAngles[i].bank
         << "|" << alpha[i]
@@ -195,28 +194,29 @@ bool VideoStabilization::output() {
         return false;
     VideoWriter videoWriter(name + "/VID_" + name + ".avi", CV_FOURCC('M', 'J', 'P', 'G'),
                             frameRate, Size(captureWidth, captureHeight));
-    VideoWriter videoWriter1(name + "/VID_" + name + "_new.avi", CV_FOURCC('M', 'J', 'P', 'G'),
-                             frameRate, Size(captureWidth, captureHeight));
+    /*VideoWriter videoWriter1(name + "/VID_" + name + "_new.avi", CV_FOURCC('M', 'J', 'P', 'G'),
+                             frameRate, Size(captureWidth, captureHeight));*/
     VideoWriter videoWriter2(name + "/VID_" + name + "_newc.avi", CV_FOURCC('M', 'J', 'P', 'G'),
                              frameRate,
                              Size(captureWidth * (1 - 2 * cropPercent), captureHeight * (1 - 2 * cropPercent)));
 
     for (int i = 0; i < frames; ++i) {
+        cout << "Generating frame " << i << "..." << endl;
+
         Mat frame;
         if (inputType == "mp4")
             getFrameByMp4(frame);
         else
             getFrameByJpg(frame, i);
         videoWriter << frame;
-        cout << i << endl;
         rotate(frame, outputFrame, rotationMat(rotQuaternions[i]));
 
         cropFrame = outputFrame(Range(cropPercent * captureHeight, (1 - cropPercent) * captureHeight),
                                 Range(cropPercent * captureWidth, (1 - cropPercent) * captureWidth));
-        imshow("ha", cropFrame);
-        videoWriter1 << outputFrame;
+        //imshow("ha", cropFrame);
+        //videoWriter1 << outputFrame;
         videoWriter2 << cropFrame;
-        waitKey(1);
+        //waitKey(1);
     }
     cout << "Output complete!";
     return true;
