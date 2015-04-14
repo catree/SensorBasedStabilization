@@ -8,7 +8,7 @@ const double VideoStabilization::cropPercent = 0.1, VideoStabilization::innerPer
 const double VideoStabilization::beta = 4;
 
 VideoStabilization::VideoStabilization(string videoName, CameraParams cameraParams) :
-        name(videoName), inputType(cameraParams.fileType),
+        name(videoName), inputType(cameraParams.fileType), frameLength(cameraParams.frameLength),
         captureWidth(cameraParams.width), captureHeight(cameraParams.height),
         sensorRate(cameraParams.sensorRate), fuvX(cameraParams.fuvX), fuvY(cameraParams.fuvY) {
     initK();
@@ -16,34 +16,44 @@ VideoStabilization::VideoStabilization(string videoName, CameraParams cameraPara
     ifstream dataFile((videoName + "/TXT_" + videoName + ".txt").c_str());
     if (!dataFile.is_open())
         assert("The file does not exist!");
+
     double tmp;
     dataFile >> frames;
     dataFile >> tmp;
     frameRate = round(tmp);
+    const int totalSlices = frames * slices;
 
     long startTime;
     dataFile >> startTime >> tmp;
-    timestamps = vector<int>(frames);
+
+    timestamps = vector<int>(totalSlices);
     timestamps[0] = 0;
-    for (int i = 1; i < frames; ++i) {
-        long time;
-        dataFile >> time;
-        timestamps[i] = time - startTime;
-        dataFile >> tmp;
+    for (int i = 0; i < frames; ++i) {
+        if (i > 0) {
+            long time;
+            dataFile >> time;
+            dataFile >> tmp;
+            timestamps[i * slices] = time - startTime;
+        }
+        for (int j = 1; j < slices; ++j) {
+            timestamps[i * slices + j] = timestamps[i * slices] + j * frameLength / slices;
+        }
     }
 
-    p = vector<Quaternion>(frames);
-    pDelta = vector<Quaternion>(frames);
-    rotAngles = vector<EulerAngles>(frames);
-    rotQuaternions = vector<Quaternion>(frames);
-    v = vector<Quaternion>(frames);
+    p = vector<Quaternion>(totalSlices);
+    pDelta = vector<Quaternion>(totalSlices);
+    v = vector<Quaternion>(totalSlices);
+    vDelta = vector<Quaternion>(totalSlices);
+    rotQuaternions = vector<Quaternion>(totalSlices);
+
     alpha = vector<double>(frames);
+    rotAngles = vector<EulerAngles>(frames);
 
     long sensorTime = 0;
     Quaternion q, qi;
     q.identity();
     qi.identity();
-    for (int i = 0; i < frames; ++i) {
+    for (int i = 0; i < timestamps.size(); ++i) {
         double avx, avy, avz;
         while ((sensorTime < timestamps[i] + startTime) && !dataFile.eof()) {
             dataFile >> sensorTime;
@@ -57,6 +67,7 @@ VideoStabilization::VideoStabilization(string videoName, CameraParams cameraPara
             pDelta[i - 1] = q;
         q = partQ;
     }
+
     dataFile.close();
 }
 
@@ -75,8 +86,6 @@ void VideoStabilization::show() {
 }
 
 void VideoStabilization::smooth() {
-    vector<Quaternion> vDelta(frames);
-
     Quaternion qi;
     qi.identity();
 

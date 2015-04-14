@@ -20,11 +20,13 @@ private:
     static const double alphaMin;
     static const double cropPercent, innerPercent;
     static const double beta;
+    static const int slices = 1;
 
     const int captureWidth, captureHeight;
     const float sensorRate;
     const double fuvX, fuvY;
     const string inputType;
+    const int frameLength;
 
     double frameRate;
     Mat K;
@@ -35,7 +37,7 @@ private:
     vector<int> timestamps;
     vector<EulerAngles> rotAngles;
     vector<Quaternion> rotQuaternions;
-    vector<Quaternion> p, v, pDelta;
+    vector<Quaternion> p, v, pDelta, vDelta;
     vector<double> alpha;
 
     Quaternion angleToQuaternion(double angX, double angY, double angZ);
