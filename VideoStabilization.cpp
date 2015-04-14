@@ -5,7 +5,7 @@
 const double VideoStabilization::d = 0.95;
 const double VideoStabilization::alphaMin = 0;
 const double VideoStabilization::cropPercent = 0.1, VideoStabilization::innerPercent = 0.05;
-const double VideoStabilization::beta = 2;
+const double VideoStabilization::beta = 4;
 
 VideoStabilization::VideoStabilization(string videoName, CameraParams cameraParams) :
         name(videoName), inputType(cameraParams.fileType),
@@ -93,16 +93,8 @@ void VideoStabilization::smooth() {
             vDelta[i] = slerp(qi, vDelta[i - 1], d);
         }
         else {
-            //Quaternion pDelta2 = conjugate(v[i - 1]) * p[i] * conjugate(p[i - 1]) * v[i - 1];
-            //Quaternion pDelta2 = pDelta[i];
-            //Quaternion pDelta2 = conjugate(v[i]) * p[i] * pDelta[i] * conjugate(p[i]) * v[i];
-            //Quaternion pDelta2 = pDelta[i] * conjugate(p[i - 1]) * v[i - 1];
-            //Quaternion vDelta2 = slerp(qi, vDelta[i - 1], d);
-            //vDelta[i] = slerp(pDelta2, vDelta[i - 1], alpha[i]);
-            //vDelta[i] = slerp(pDelta2, vDelta[i - 1], 0.995);
-            vDelta[i] = qi;
-            //vDelta[i] = slerp(pDelta2, vDelta2, alpha[i]);
-            //vDelta[i] = slerp(pDelta[i] * conjugate(p[i - 1]) * v[i - 1], vDelta[i - 1], alpha);
+            Quaternion pDelta2 = conjugate(v[i - 1]) * p[i] * conjugate(p[i - 1]) * v[i - 1];
+            vDelta[i] = slerp(pDelta2, vDelta[i - 1], alpha[i]);
         }
 
     }
