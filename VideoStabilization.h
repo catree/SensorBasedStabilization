@@ -17,7 +17,6 @@ using namespace std;
 class VideoStabilization {
 private:
     static const double d;
-    static const double alphaMin;
     static const double cropPercent, innerPercent;
     static const double beta;
     static const int slices = 1;

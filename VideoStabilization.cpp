@@ -3,7 +3,6 @@
 #include "test.h"
 
 const double VideoStabilization::d = 0.95;
-const double VideoStabilization::alphaMin = 0;
 const double VideoStabilization::cropPercent = 0.1, VideoStabilization::innerPercent = 0.05;
 const double VideoStabilization::beta = 4;
 
@@ -42,12 +41,11 @@ VideoStabilization::VideoStabilization(string videoName, CameraParams cameraPara
 
     p = vector<Quaternion>(totalSlices);
     pDelta = vector<Quaternion>(totalSlices);
-    v = vector<Quaternion>(totalSlices);
-    vDelta = vector<Quaternion>(totalSlices);
+    v = vector<Quaternion>(frames);
+    vDelta = vector<Quaternion>(frames);
     rotQuaternions = vector<Quaternion>(totalSlices);
-
     alpha = vector<double>(frames);
-    rotAngles = vector<EulerAngles>(frames);
+    rotAngles = vector<EulerAngles>(totalSlices);
 
     long sensorTime = 0;
     Quaternion q, qi;
@@ -74,11 +72,12 @@ VideoStabilization::VideoStabilization(string videoName, CameraParams cameraPara
 void VideoStabilization::show() {
     EulerAngles e, ev;
     for (int i = 0; i < frames; ++i) {
-        e = quaternionToAngle(p[i]);
+        e = quaternionToAngle(p[i * slices]);
         ev = quaternionToAngle(v[i]);
         cout << i << " " << e.pitch << " " << e.heading << " " << e.bank
         << "|" << ev.pitch << " " << ev.heading << " " << ev.bank
-        << "|" << rotAngles[i].pitch << " " << rotAngles[i].heading << " " << rotAngles[i].bank
+        << "|" << rotAngles[i * slices].pitch << " " << rotAngles[i * slices].heading << " " <<
+        rotAngles[i * slices].bank
         << "|" << alpha[i]
         << endl;
     }
@@ -90,23 +89,28 @@ void VideoStabilization::smooth() {
 
     v[0] = p[0] = qi;
     vDelta[0] = qi;
-    for (int i = 1; i < frames; ++i) {
-        p[i] = p[i - 1] * pDelta[i - 1];
-        v[i] = v[i - 1];
-        v[i] *= vDelta[i - 1];
-        computeRotation(v[i], p[i], i);
-
-        alpha[i] = computeAlpha(rotQuaternions[i]);
-        if (alpha[i] == 1) {
-            vDelta[i] = slerp(qi, vDelta[i - 1], d);
+    for (int k = 1; k < p.size(); ++k) {
+        p[k] = p[k - 1];
+        p[k] *= pDelta[k - 1];
+        int i = k / slices;
+        if (k % slices == 0) {
+            v[i] = v[i - 1];
+            v[i] *= vDelta[i - 1];
         }
-        else {
-            Quaternion pDelta2 = conjugate(v[i - 1]) * p[i] * conjugate(p[i - 1]) * v[i - 1];
-            vDelta[i] = slerp(pDelta2, vDelta[i - 1], alpha[i]);
+        computeRotation(v[i], p[k], k);
+        if (k % slices == 0) {
+            alpha[i] = computeAlpha(rotQuaternions[k]);
+            if (alpha[i] == 1) {
+                vDelta[i] = slerp(qi, vDelta[i - 1], d);
+            }
+            else {
+                Quaternion pDelta2 = conjugate(v[i - 1]) * p[k] * conjugate(p[k - slices]) * v[i - 1];
+                vDelta[i] = slerp(pDelta2, vDelta[i - 1], alpha[i]);
+            }
         }
-
     }
 }
+
 
 Quaternion VideoStabilization::angleToQuaternion(double angX, double angY, double angZ) {
     Quaternion q;
@@ -156,7 +160,7 @@ double VideoStabilization::computeAlpha(Quaternion rotQuaternion) {
     }
     if (omega > 1)
         omega = 1;
-    return alphaMin + (1 - alphaMin) * (1 - pow(omega, beta));
+    return 1 - pow(omega, beta);
 }
 
 void VideoStabilization::computeRotation(const Quaternion &v, const Quaternion &p, int index) {
@@ -190,15 +194,15 @@ Mat VideoStabilization::rotationMat(Quaternion rotQuaternion) {
 }
 
 bool VideoStabilization::output() {
-    if (rotQuaternions.size() != frames)
-        return false;
     VideoWriter videoWriter(name + "/VID_" + name + ".avi", CV_FOURCC('M', 'J', 'P', 'G'),
                             frameRate, Size(captureWidth, captureHeight));
     /*VideoWriter videoWriter1(name + "/VID_" + name + "_new.avi", CV_FOURCC('M', 'J', 'P', 'G'),
                              frameRate, Size(captureWidth, captureHeight));*/
+    const int cropWidth = captureWidth * (1 - 2 * cropPercent);
+    const int cropHeight = captureHeight * (1 - 2 * cropPercent);
     VideoWriter videoWriter2(name + "/VID_" + name + "_newc.avi", CV_FOURCC('M', 'J', 'P', 'G'),
                              frameRate,
-                             Size(captureWidth * (1 - 2 * cropPercent), captureHeight * (1 - 2 * cropPercent)));
+                             Size(cropWidth, cropHeight));
 
     for (int i = 0; i < frames; ++i) {
         cout << "Generating frame " << i << "..." << endl;
@@ -209,10 +213,20 @@ bool VideoStabilization::output() {
         else
             getFrameByJpg(frame, i);
         videoWriter << frame;
-        rotate(frame, outputFrame, rotationMat(rotQuaternions[i]));
+        cropFrame = frame(Range(0, cropHeight), Range(0, cropWidth));
 
-        cropFrame = outputFrame(Range(cropPercent * captureHeight, (1 - cropPercent) * captureHeight),
-                                Range(cropPercent * captureWidth, (1 - cropPercent) * captureWidth));
+        for (int j = 0; j < slices; ++j) {
+            rotate(frame, outputFrame, rotationMat(rotQuaternions[i * slices + j]));
+            int sliceY1 = j * cropHeight / slices;
+            int sliceY2 = (j + 1) * cropHeight / slices;
+            int sliceX1 = 0;
+            int sliceX2 = cropFrame.cols;
+            const int offsetY = captureHeight * cropPercent;
+            const int offsetX = captureWidth * cropPercent;
+            outputFrame(Range(sliceY1 + offsetY, sliceY2 + offsetY),
+                        Range(sliceX1 + offsetX, sliceX2 + offsetX)).copyTo(
+                    cropFrame(Range(sliceY1, sliceY2), Range(sliceX1, sliceX2)));
+        }
         //imshow("ha", cropFrame);
         //videoWriter1 << outputFrame;
         videoWriter2 << cropFrame;
