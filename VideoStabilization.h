@@ -1,15 +1,16 @@
 #ifndef VIDEO_STABILIZATION
 #define VIDEO_STABILIZATION
 
-#include<opencv2/opencv.hpp>
-#include<opencv2/highgui/highgui.hpp>
-#include<fstream>
-#include<vector>
-#include<iostream>
-#include<string>
-#include"Quaternion.h"
+#include <opencv2/opencv.hpp>
+#include <opencv2/highgui/highgui.hpp>
+#include <fstream>
+#include <vector>
+#include <iostream>
+#include <string>
+#include "Quaternion.h"
 #include "EulerAngles.h"
 #include "Parameters.h"
+#include "Matrix4x3.h"
 
 using namespace cv;
 using namespace std;
@@ -32,7 +33,7 @@ private:
     Mat outputFrame, cropFrame;
 
     int frames;
-    string name;
+    string name, directory;
     vector<int> timestamps;
     vector<EulerAngles> rotAngles;
     vector<Quaternion> rotQuaternions;
@@ -58,7 +59,7 @@ public:
 
     static Mat rotationMat(Quaternion rotQuaternion);
 
-    VideoStabilization(string videoName, CameraParams cameraParams = cameraParamsXIAOMI4);
+    VideoStabilization(string videoName, CameraParams cameraParams = cameraParamsXIAOMI4, string dir = "");
 
     void smooth();
 

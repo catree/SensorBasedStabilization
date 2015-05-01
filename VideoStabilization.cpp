@@ -1,18 +1,16 @@
 #include"VideoStabilization.h"
-#include "Matrix4x3.h"
-#include "test.h"
 
 const double VideoStabilization::d = 0.95;
 const double VideoStabilization::cropPercent = 0.1, VideoStabilization::innerPercent = 0.05;
 const double VideoStabilization::beta = 4;
 
-VideoStabilization::VideoStabilization(string videoName, CameraParams cameraParams) :
-        name(videoName), inputType(cameraParams.fileType), frameLength(cameraParams.frameLength),
+VideoStabilization::VideoStabilization(string videoName, CameraParams cameraParams, string dir) :
+        name(videoName), directory(dir), inputType(cameraParams.fileType), frameLength(cameraParams.frameLength),
         captureWidth(cameraParams.width), captureHeight(cameraParams.height),
         sensorRate(cameraParams.sensorRate), fuvX(cameraParams.fuvX), fuvY(cameraParams.fuvY) {
     initK();
 
-    ifstream dataFile((videoName + "/TXT_" + videoName + ".txt").c_str());
+    ifstream dataFile((directory + videoName + "/TXT_" + videoName + ".txt").c_str());
     if (!dataFile.is_open())
         assert("The file does not exist!");
 
@@ -238,17 +236,14 @@ bool VideoStabilization::output() {
 
 
 void VideoStabilization::getFrameByJpg(Mat &frame, int index) {
-    stringstream ss;
-    ss << name << "/IMG_" << name << "_" << index << ".jpg";
-    string imagePath;
-    ss >> imagePath;
-    frame = imread(imagePath);
+    string imagePath = name + "/IMG_" + name + "_" + to_string(index) + ".jpg";
+    frame = imread(directory + imagePath);
     transpose(frame, frame);
     flip(frame, frame, 1);
 }
 
 void VideoStabilization::getFrameByMp4(Mat &frame) {
-    static VideoCapture video(name + "/" + name + ".mp4");
+    static VideoCapture video(directory + name + "/" + name + ".mp4");
     video >> frame;
 }
 
