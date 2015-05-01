@@ -236,7 +236,10 @@ bool VideoStabilization::output() {
 
 
 void VideoStabilization::getFrameByJpg(Mat &frame, int index) {
-    string imagePath = name + "/IMG_" + name + "_" + to_string(index) + ".jpg";
+    stringstream ss;
+    ss << name << "/IMG_" << name << "_" << index << ".jpg";
+    string imagePath;
+    ss >> imagePath;
     frame = imread(directory + imagePath);
     transpose(frame, frame);
     flip(frame, frame, 1);

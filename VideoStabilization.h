@@ -11,10 +11,6 @@
 #include "EulerAngles.h"
 #include "Parameters.h"
 #include "Matrix4x3.h"
-#ifdef JNI_H_
-    #include "Android_Helper.h"
-#endif
-
 
 using namespace cv;
 using namespace std;
