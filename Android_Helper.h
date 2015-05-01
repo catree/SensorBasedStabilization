@@ -7,8 +7,7 @@
 
 #include <string>
 
-template<typename T>
-inline string to_string(T value) {
+inline string to_string(int value) {
     std::ostringstream os;
     os << value;
     return os.str();
