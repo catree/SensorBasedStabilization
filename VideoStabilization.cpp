@@ -20,14 +20,14 @@ VideoStabilization::VideoStabilization(string videoName, CameraParams cameraPara
     frameRate = round(tmp);
     const int totalSlices = frames * slices;
 
-    long startTime;
+    long long startTime;
     dataFile >> startTime >> tmp;
 
     timestamps = vector<int>(totalSlices);
     timestamps[0] = 0;
     for (int i = 0; i < frames; ++i) {
         if (i > 0) {
-            long time;
+            long long time;
             dataFile >> time;
             dataFile >> tmp;
             timestamps[i * slices] = time - startTime;
@@ -45,7 +45,7 @@ VideoStabilization::VideoStabilization(string videoName, CameraParams cameraPara
     alpha = vector<double>(frames);
     rotAngles = vector<EulerAngles>(totalSlices);
 
-    long sensorTime = 0;
+    long long sensorTime = 0;
     Quaternion q, qi;
     q.identity();
     qi.identity();
