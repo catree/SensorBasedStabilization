@@ -192,13 +192,13 @@ Mat VideoStabilization::rotationMat(Quaternion rotQuaternion) {
 }
 
 bool VideoStabilization::output() {
-    VideoWriter videoWriter(name + "/VID_" + name + ".avi", CV_FOURCC('M', 'J', 'P', 'G'),
+    VideoWriter videoWriter(directory + name + "/VID_" + name + ".avi", CV_FOURCC('M', 'J', 'P', 'G'),
                             frameRate, Size(captureWidth, captureHeight));
     /*VideoWriter videoWriter1(name + "/VID_" + name + "_new.avi", CV_FOURCC('M', 'J', 'P', 'G'),
                              frameRate, Size(captureWidth, captureHeight));*/
     const int cropWidth = captureWidth * (1 - 2 * cropPercent);
     const int cropHeight = captureHeight * (1 - 2 * cropPercent);
-    VideoWriter videoWriter2(name + "/VID_" + name + "_newc.avi", CV_FOURCC('M', 'J', 'P', 'G'),
+    VideoWriter videoWriter2(directory + name + "/VID_" + name + "_newc.avi", CV_FOURCC('M', 'J', 'P', 'G'),
                              frameRate,
                              Size(cropWidth, cropHeight));
 
