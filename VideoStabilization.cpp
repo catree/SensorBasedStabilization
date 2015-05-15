@@ -202,6 +202,10 @@ bool VideoStabilization::output() {
                              frameRate,
                              Size(cropWidth, cropHeight));
 
+    if (inputType == "mp4") {
+        video = VideoCapture(directory + name + "/" + name + ".mp4");
+    }
+
     for (int i = 0; i < frames; ++i) {
         cout << "Generating frame " << i << "..." << endl;
 
@@ -246,7 +250,6 @@ void VideoStabilization::getFrameByJpg(Mat &frame, int index) {
 }
 
 void VideoStabilization::getFrameByMp4(Mat &frame) {
-    static VideoCapture video(directory + name + "/" + name + ".mp4");
     video >> frame;
 }
 

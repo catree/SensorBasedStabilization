@@ -40,6 +40,8 @@ private:
     vector<Quaternion> p, v, pDelta, vDelta;
     vector<double> alpha;
 
+    VideoCapture video;
+
     Quaternion angleToQuaternion(double angX, double angY, double angZ);
 
     double computeAlpha(Quaternion rotQuaternion);
