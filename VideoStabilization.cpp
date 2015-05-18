@@ -255,8 +255,7 @@ void VideoStabilization::getFrameByMp4(Mat &frame) {
 
 void VideoStabilization::rotate(const Mat &src, Mat &dst, const Mat &R) {
     const Mat H = K * R.inv() * K.inv();
-    GpuMat Gsrc(src), Gdst; //= Gsrc.clone();
-    //warpPerspective(src, dst, H, Size(src.cols, src.rows), INTER_LINEAR + WARP_INVERSE_MAP);
+    GpuMat Gsrc(src), Gdst;
     gpu::warpPerspective(Gsrc, Gdst, H, Size(Gsrc.cols, Gsrc.rows), INTER_LINEAR + WARP_INVERSE_MAP);
     Gdst.download(dst);
 }
