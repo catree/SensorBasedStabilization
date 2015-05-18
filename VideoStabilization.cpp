@@ -225,9 +225,14 @@ bool VideoStabilization::output() {
             int sliceX2 = cropFrame.cols;
             const int offsetY = captureHeight * cropPercent;
             const int offsetX = captureWidth * cropPercent;
-            outputFrame(Range(sliceY1 + offsetY, sliceY2 + offsetY),
-                        Range(sliceX1 + offsetX, sliceX2 + offsetX)).copyTo(
-                    cropFrame(Range(sliceY1, sliceY2), Range(sliceX1, sliceX2)));
+            if (slices == 1)
+                cropFrame = outputFrame(Range(sliceY1 + offsetY, sliceY2 + offsetY),
+                                        Range(sliceX1 + offsetX, sliceX2 + offsetX));
+            else {
+                outputFrame(Range(sliceY1 + offsetY, sliceY2 + offsetY),
+                            Range(sliceX1 + offsetX, sliceX2 + offsetX)).copyTo(
+                        cropFrame(Range(sliceY1, sliceY2), Range(sliceX1, sliceX2)));
+            }
         }
         //imshow("ha", cropFrame);
         //videoWriter1 << outputFrame;
