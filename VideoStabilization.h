@@ -3,6 +3,7 @@
 
 #include <opencv2/opencv.hpp>
 #include <opencv2/highgui/highgui.hpp>
+#include <opencv2/gpu/gpu.hpp>
 #include <fstream>
 #include <vector>
 #include <iostream>
@@ -14,6 +15,8 @@
 
 using namespace cv;
 using namespace std;
+
+typedef gpu::GpuMat GpuMat;
 
 class VideoStabilization {
 private:

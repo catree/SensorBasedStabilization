@@ -254,8 +254,11 @@ void VideoStabilization::getFrameByMp4(Mat &frame) {
 }
 
 void VideoStabilization::rotate(const Mat &src, Mat &dst, const Mat &R) {
-    Mat H = K * R.inv() * K.inv();
-    warpPerspective(src, dst, H, Size(src.cols, src.rows), INTER_LINEAR + WARP_INVERSE_MAP);
+    const Mat H = K * R.inv() * K.inv();
+    GpuMat Gsrc(src), Gdst; //= Gsrc.clone();
+    //warpPerspective(src, dst, H, Size(src.cols, src.rows), INTER_LINEAR + WARP_INVERSE_MAP);
+    gpu::warpPerspective(Gsrc, Gdst, H, Size(Gsrc.cols, Gsrc.rows), INTER_LINEAR + WARP_INVERSE_MAP);
+    Gdst.download(dst);
 }
 
 EulerAngles VideoStabilization::quaternionToAngle(Quaternion q) {
