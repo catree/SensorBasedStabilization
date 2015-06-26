@@ -6,11 +6,11 @@
 using namespace std;
 
 struct CameraParams {
-    int width, height;
-    float sensorRate;
-    double fuvX, fuvY;
-    string fileType;
-    int frameLength;
+    int width, height; //image size
+    float sensorRate; //sensor sample rate
+    double fuvX, fuvY; //focal length
+    string fileType; //jpg or mp4
+    int frameLength; //only needed for jello effect correction
 
     CameraParams(int w, int h, float sr, double fx, double fy, int fl, string type = "jpg")
             : width(w), height(h), sensorRate(sr), fuvX(fx), fuvY(fy), frameLength(fl), fileType(type) {
