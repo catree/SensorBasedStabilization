@@ -31,6 +31,8 @@ const Quaternion kQuaternionIdentity = {
 	1.0f, 0.0f, 0.0f, 0.0f
 };
 
+bool Quaternion::normalizeAssign = true;
+
 /////////////////////////////////////////////////////////////////////////////
 //
 // class Quaternion members
@@ -189,9 +191,6 @@ Quaternion &Quaternion::operator *=(const Quaternion &a) {
 	// Multuiply and assign
 
 	*this = *this * a;
-
-	//Normalize(Edited by Tong)
-	this->normalize();
 
 	// Return reference to l-value
 

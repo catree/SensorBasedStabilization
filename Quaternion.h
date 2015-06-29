@@ -37,6 +37,13 @@ public:
 
 // Public operations
 
+    static bool normalizeAssign;
+    Quaternion& operator=(const Quaternion& q) {
+        w=q.w; x=q.x; y=q.y; z=q.z;
+        if(normalizeAssign)normalize();
+        return *this;
+    }
+
 	// Set to identity
 
 	void	identity() { w = 1.0f; x = y = z = 0.0f; }
