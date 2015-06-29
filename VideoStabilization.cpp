@@ -88,12 +88,10 @@ void VideoStabilization::smooth() {
     v[0] = p[0] = qi;
     vDelta[0] = qi;
     for (int k = 1; k < p.size(); ++k) {
-        p[k] = p[k - 1];
-        p[k] *= pDelta[k - 1];
+        p[k] = p[k - 1] * pDelta[k - 1];
         int i = k / slices;
         if (k % slices == 0) {
-            v[i] = v[i - 1];
-            v[i] *= vDelta[i - 1];
+            v[i] = v[i - 1] * vDelta[i - 1];
         }
         computeRotation(v[i], p[k], k);
         if (k % slices == 0) {
