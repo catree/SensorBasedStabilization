@@ -48,6 +48,8 @@ private:
 
     void computeRotation(Quaternion const &v, Quaternion const &p, int index);
 
+    int findExtreme(int start, Quaternion ref);
+
     void getFrameByJpg(Mat &frame, int index);
 
     void getFrameByMp4(Mat &frame);
@@ -64,6 +66,8 @@ public:
     VideoStabilization(string videoName, CameraParams cameraParams = cameraParamsXIAOMI4, string dir = "");
 
     void smooth();
+
+    void smooth2();
 
     void show();
 

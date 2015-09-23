@@ -107,6 +107,59 @@ void VideoStabilization::smooth() {
     }
 }
 
+void VideoStabilization::smooth2() {
+    Quaternion qi;
+    qi.identity();
+
+    p[0] = qi;
+    for (int k = 1; k < p.size(); ++k) {
+        p[k] = p[k - 1] * pDelta[k - 1];
+    }
+
+    bool moving = false;
+    int ext;
+    for (int k = 1; k < p.size(); ++k) {
+        int i = k / slices;
+        if (k % slices == 0) {
+            v[i] = v[i - 1] * vDelta[i - 1];
+        }
+        computeRotation(v[i], p[k], k);
+        if (k % slices == 0) {
+            alpha[i] = computeAlpha(rotQuaternions[k]);
+            if (alpha[i] > 0.7) {
+                vDelta[i] = qi;
+            }
+            else {
+                Quaternion pDelta2 = conjugate(v[i - 1]) * p[k] * conjugate(p[k - slices]) * v[i - 1];
+                vDelta[i] = slerp(pDelta2, vDelta[i - 1], 0);
+            }
+            /*if (moving) {
+                vDelta[i] = vDelta[i - 1];
+                if (i == ext)
+                    moving = false;
+            }
+            else if (alpha[i] > 0.7)
+                vDelta[i] = qi;
+            else {
+                ext = i;
+                float minDP = dotProduct(v[i], p[ext * slices]);
+                while (ext != v.size() - 1) {
+                    float DP = dotProduct(v[i], p[(ext + 1) * slices]);
+                    if (minDP > DP) {
+                        minDP = DP;
+                        ++ext;
+                    }
+                    else
+                        break;
+                }
+                Quaternion pDelta2 = conjugate(v[i - 1]) * p[ext * slices] * conjugate(p[k - slices]) * v[i - 1];
+                vDelta[i] = slerp(qi, pDelta2, 1.0f / (ext - i + 1));
+                moving = true;
+            }*/
+        }
+    }
+}
+
 
 Quaternion VideoStabilization::angleToQuaternion(double angX, double angY, double angZ) {
     Quaternion q;
@@ -281,4 +334,19 @@ void VideoStabilization::initK() {
     K.at<double>(0, 2) = cx;
     K.at<double>(1, 2) = cy;
     K.at<double>(2, 2) = 1;
+}
+
+int VideoStabilization::findExtreme(int start, Quaternion ref) {
+    int ext = start;
+    float minDP = dotProduct(ref, p[ext * slices]);
+    while (ext != v.size() - 1) {
+        float DP = dotProduct(v[ext + 1], p[(ext + 1) * slices]);
+        if (minDP > DP) {
+            minDP = DP;
+            ++ext;
+        }
+        else
+            break;
+    }
+    return 0;
 }
